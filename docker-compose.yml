@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: investigator
+      POSTGRES_PASSWORD: investigator
+      POSTGRES_DB: investigator
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U investigator"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: postgresql+psycopg://investigator:investigator@db:5432/investigator
+      CORS_ORIGINS: http://localhost:3000
+      GITHUB_ALLOWED_REPOS: ${GITHUB_ALLOWED_REPOS:-demo/frontend-agent-demo-shop}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.6-terra}
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+volumes:
+  postgres_data:
+

@@ -1,0 +1,24 @@
+databases:
+  - name: task-investigator-db
+    databaseName: investigator
+    user: investigator
+services:
+  - type: web
+    name: task-investigator-api
+    runtime: docker
+    rootDir: apps/api
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: task-investigator-db, property: connectionString }
+      - key: CORS_ORIGINS
+        sync: false
+      - key: GITHUB_ALLOWED_REPOS
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.6-terra
+
