@@ -1,0 +1,89 @@
+{
+  "requirement_summary": "為暫時性的付款失敗加入安全且清楚的重試流程，同時避免建立重複的付款交易。",
+  "clarification_questions": [
+    "哪些金流供應商錯誤碼屬於可安全重試的暫時性錯誤？",
+    "重試延遲應採固定間隔，還是指數退避？"
+  ],
+  "impacted_files": [
+    {
+      "path": "src/lib/paymentApi.ts",
+      "reason": "目前 API Client 將所有非 2xx 回應視為最終失敗，也沒有定義冪等性機制。",
+      "risk_level": "high",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/lib/paymentApi.ts#L18-L41", "label": "paymentApi.ts：第 18–41 行", "kind": "file"}]
+    },
+    {
+      "path": "src/hooks/usePayment.ts",
+      "reason": "此 Hook 管理請求與錯誤狀態，因此需要提供重試次數並防止同時送出多個重試。",
+      "risk_level": "high",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/hooks/usePayment.ts#L12-L58", "label": "usePayment.ts：第 12–58 行", "kind": "file"}]
+    },
+    {
+      "path": "src/components/checkout/PaymentForm.tsx",
+      "reason": "結帳介面需要顯示重試進度、停用狀態與最終失敗訊息。",
+      "risk_level": "medium",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/components/checkout/PaymentForm.tsx#L30-L86", "label": "PaymentForm.tsx：第 30–86 行", "kind": "file"}]
+    },
+    {
+      "path": "src/components/checkout/PaymentForm.test.tsx",
+      "reason": "現有測試只涵蓋單次失敗，尚未測試重試後成功與重試次數耗盡。",
+      "risk_level": "medium",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/components/checkout/PaymentForm.test.tsx#L44-L73", "label": "PaymentForm.test.tsx：第 44–73 行", "kind": "file"}]
+    }
+  ],
+  "implementation_tasks": [
+    {
+      "title": "定義可重試的付款錯誤",
+      "description": "將金流錯誤分類為可重試與不可重試，並確保所有嘗試共用相同的冪等性金鑰。",
+      "affected_files": ["src/lib/paymentApi.ts"],
+      "acceptance_criteria": ["只有暫時性錯誤會觸發重試", "所有嘗試共用同一個冪等性金鑰"],
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/lib/paymentApi.ts#L18-L41", "label": "目前的 API 錯誤處理", "kind": "file"}]
+    },
+    {
+      "title": "加入有上限的重試狀態",
+      "description": "追蹤嘗試次數、阻止重複送出，並在第三次失敗後停止。",
+      "affected_files": ["src/hooks/usePayment.ts"],
+      "acceptance_criteria": ["最多嘗試三次", "重試期間不能啟動第二次付款請求"],
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/hooks/usePayment.ts#L12-L58", "label": "付款請求狀態", "kind": "file"}]
+    },
+    {
+      "title": "在結帳頁顯示重試進度",
+      "description": "顯示目前嘗試次數、保留清楚的最終錯誤，並確保狀態切換符合無障礙要求。",
+      "affected_files": ["src/components/checkout/PaymentForm.tsx", "src/components/checkout/PaymentForm.test.tsx"],
+      "acceptance_criteria": ["輔助科技能接收到進度變更", "測試涵蓋成功與重試耗盡流程"],
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/components/checkout/PaymentForm.tsx#L30-L86", "label": "付款表單介面", "kind": "file"}]
+    }
+  ],
+  "acceptance_criteria": [
+    "暫時性錯誤最多重試三次。",
+    "永久性錯誤不會重試。",
+    "同一筆付款不能被重複扣款。",
+    "介面會顯示進度與清楚的最終狀態。"
+  ],
+  "risks": [
+    {
+      "title": "重複扣款",
+      "severity": "high",
+      "explanation": "若重試時沒有沿用穩定的冪等性金鑰，可能建立多筆付款交易。",
+      "evidence_type": "direct",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/lib/paymentApi.ts#L18-L41", "label": "目前 Client 未使用冪等性金鑰", "kind": "file"}]
+    },
+    {
+      "title": "重試不可恢復的錯誤",
+      "severity": "medium",
+      "explanation": "目前的通用錯誤類型無法區分付款遭拒與暫時性網路失敗。",
+      "evidence_type": "direct",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/blob/main/src/lib/paymentApi.ts#L32-L41", "label": "通用錯誤處理分支", "kind": "file"}]
+    },
+    {
+      "title": "尚未定義退避策略",
+      "severity": "medium",
+      "explanation": "Issue 要求最多重試三次，但沒有定義每次重試的延遲方式，實作前需要確認。",
+      "evidence_type": "inference",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/issues/128", "label": "Issue #128", "kind": "inference"}]
+    }
+  ],
+  "confidence": {
+    "level": "high",
+    "reason": "已找到付款請求、狀態管理、介面與現有測試；但仍需確認金流供應商的錯誤語意。"
+  }
+}
