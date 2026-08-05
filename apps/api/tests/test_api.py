@@ -4,7 +4,7 @@ import time
 def create_replay(client):
     response = client.post("/api/v1/investigations", json={
         "repository": "demo/frontend-agent-demo-shop", "issue_number": 128,
-        "branch": "main", "include_pull_requests": True, "mode": "replay",
+        "branch": "main", "include_pull_requests": True, "mode": "replay", "locale": "zh-TW",
     })
     assert response.status_code == 202
     investigation_id = response.json()["id"]
@@ -19,6 +19,7 @@ def create_replay(client):
 def test_replay_reaches_approval_with_grounded_report(client):
     result = create_replay(client)
     assert result["status"] == "waiting_approval"
+    assert result["locale"] == "zh-TW"
     assert len(result["steps"]) == 8
     assert result["report"]["impacted_files"]
     for file in result["report"]["impacted_files"]:
@@ -52,4 +53,3 @@ def test_live_mode_enforces_repository_allowlist(client):
 
 def test_health(client):
     assert client.get("/health").json()["status"] == "ok"
-

@@ -33,6 +33,21 @@ GitHub Issue → Plan → Code search → File inspection → PR/CI context
 
 The web surface lives at the repository root for a standard Vercel-compatible Next.js build. The independently deployable backend lives in `apps/api`.
 
+```mermaid
+flowchart LR
+    U["Reviewer"] --> W["Next.js workspace"]
+    W -->|"JSON + SSE"| A["FastAPI workflow"]
+    A --> D[("PostgreSQL")]
+    A -->|"read-only tools"| G["GitHub API"]
+    A -->|"structured requests"| O["OpenAI Responses API"]
+    G --> A
+    O --> A
+    A -->|"grounded report"| W
+    W -->|"approve / reject"| A
+```
+
+The model never receives the GitHub token. FastAPI owns the tool allowlist, file limits, state transitions, persistence, and approval boundary.
+
 ## Prerequisites
 
 Install these before starting:
@@ -90,7 +105,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`, keep **Replay** selected, and click **Run analysis**. The fixed Issue #128 case should reach `waiting approval`, after which you can approve or reject the draft.
+Open `http://localhost:3000`, keep **Replay** selected, and click **Run analysis**. The fixed replay case should reach `waiting approval`, after which you can approve or reject the draft.
 
 ### 5. Stop the project
 
@@ -116,11 +131,14 @@ Terminal 1 — FastAPI:
 
 ```bash
 cd "/Users/leochang/Desktop/frontend-task-investigator/apps/api"
+cp .env.example .env
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
+
+For Live Mode, fill in `apps/api/.env`. For Replay Mode, the placeholder credentials can remain empty.
 
 Terminal 2 — Next.js:
 
@@ -151,7 +169,7 @@ OPENAI_MODEL=gpt-5.6-terra
 
 Never commit tokens. The GitHub token needs repository Contents, Issues, Pull Requests, and Actions read access only.
 
-Publish `examples/frontend-agent-demo-shop` as a separate repository and create the fixture Issue before enabling Live mode.
+The portfolio demo uses `c-y-s-s/frontend-agent-demo-shop`. Live Issue #1 covers payment retries and Issue #4 covers cart persistence.
 
 Restart the API after changing `.env`. In the UI, select **Live**, enter the allowlisted `owner/repository`, Issue number, and branch, then start the investigation.
 
@@ -197,7 +215,8 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 ## Safety and cost controls
 
 - Live mode accepts only explicitly allowlisted repositories.
-- File reads are capped at 10 files and 40 KB per file.
+- File reads are capped at 7 files and 40 KB per file.
+- PR evidence is capped at 3 pull requests and 20 changed-file paths per PR; full patches are never sent to the model.
 - Secrets, build output, binaries, lockfiles, and suspicious paths are excluded.
 - Live runs have per-IP hourly and global daily limits.
 - Model output is schema-validated before persistence.
@@ -218,22 +237,33 @@ pytest
 
 The suite covers replay completion, citation validation, approval state guards, rejection validation, repository allowlisting, and health checks. External calls are not required.
 
+## Interview demo
+
+Use Replay mode for the reliable 3–5 minute walkthrough:
+
+1. Submit the fixed case and point out the observable Issue → search → files → PR/CI → report timeline.
+2. Open one impacted-file citation and one historical-PR citation to show that claims are grounded.
+3. Explain that GitHub tools are read-only and capped; the model never receives the GitHub token or a general HTTP tool.
+4. Approve the report to demonstrate the human checkpoint and audit state.
+5. Show one saved Live result to compare real latency and token usage without risking an interview-time API failure.
+
 ## Evaluation
 
-Fixture Issue #128 includes ground truth in the demo repository README. Record these metrics across at least three Issues before claiming productivity gains:
+Ground truth is stored outside the demo repository in `evals/`, so the Agent cannot discover the answers during code search. The interview-sized evaluation uses two deliberately different tasks:
 
-- impacted-file precision and recall
-- accepted versus edited implementation tasks
-- unsupported-claim rate
-- manual investigation time versus agent-assisted review time
-- total latency, tool calls, tokens, and estimated cost
+| Case | Expected files | Related PR | File result | Tokens | Agent time | Human edit |
+|---|---:|---:|---|---:|---:|---|
+| Issue #1 — payment retry | 5 | #2 | 5/5 found | 7,877 | 44.27 s | Approved unchanged |
+| Issue #4 — cart persistence | 4 | #3 | 4/4 found | 8,415 | 46.94 s | Approved unchanged |
 
-The replay metrics in the UI are representative fixture values, not a pricing claim.
+For each case, manually record impacted-file precision/recall, whether the expected PR was cited, token usage, summed workflow duration, and whether the draft required edits. Two cases are enough for this portfolio demonstration; the table is not presented as a production benchmark.
+
+The payment result above improved from an earlier 24,691-token run to 7,877 tokens after limiting candidate files and using a focused search-planning step. Replay metrics are fixture values, not pricing claims.
 
 ## Known limits
 
 - GitHub Code Search completeness depends on GitHub indexing and token access.
-- Keyword planning is deterministic in v0.1; semantic repository indexing is intentionally out of scope.
+- Search planning uses a small structured model call; semantic repository indexing is intentionally out of scope.
 - Free hosting may cold-start. Replay mode remains the reliable interview path.
 - Approval records review; it does not update an Issue.
 
@@ -244,3 +274,5 @@ Task Investigator 是一個面試作品用的前端工程 Agent。輸入 GitHub 
 第一版刻意不寫回 GitHub：模型只能使用後端允許的唯讀工具；所有寫入行為都留待後續版本。公開展示預設使用 Replay Mode，因此沒有 API Key 也能穩定演示完整流程。Live Mode 僅接受 allowlist 內的 Repo，並限制每次讀取檔案數量、單檔大小、IP 呼叫次數和每日總量。
 
 面試時請強調：這不是單次 Prompt，而是具備工具邊界、狀態管理、來源引用、結構化輸出、人工核准、Audit Log、錯誤處理與評估設計的完整 Agent Workflow。
+
+面試 Demo 建議先使用 Replay Mode 走完 3–5 分鐘流程，再展示已保存的 Live 結果。評估只使用付款重試與購物車持久化兩張 Issue，目的是證明 Agent 能處理不同類型的前端任務，而不是宣稱已達正式產品等級。

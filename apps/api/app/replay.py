@@ -21,6 +21,22 @@ REPLAY_REPORT = {
         "Which provider error codes are transient and safe to retry?",
         "Should the retry delay be fixed or exponential?",
     ],
+    "repository_evidence": [
+        {
+            "kind": "pull_request",
+            "title": "Normalize payment provider errors",
+            "summary": "A related pull request introduced stable retryable and terminal payment error categories without implementing automatic retry.",
+            "relevance": "The retry flow should reuse this error contract instead of duplicating provider classification in the UI.",
+            "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/pull/42", "label": "PR #42", "kind": "pull_request"}],
+        },
+        {
+            "kind": "workflow",
+            "title": "CI passed on main",
+            "summary": "The latest recorded CI run completed successfully.",
+            "relevance": "This establishes a clean baseline only; it does not verify the requested retry behavior, which is not implemented yet.",
+            "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/actions/runs/1001", "label": "CI run #1001", "kind": "workflow"}],
+        },
+    ],
     "impacted_files": [
         {
             "path": "src/lib/paymentApi.ts",
@@ -101,4 +117,3 @@ REPLAY_REPORT = {
     ],
     "confidence": {"level": "high", "reason": "The payment request, state owner, UI, and existing tests were all located; provider error semantics still require clarification."},
 }
-

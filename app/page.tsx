@@ -13,6 +13,7 @@ type Citation = { url: string; label: string; kind: string };
 type Report = {
   requirement_summary: string;
   clarification_questions: string[];
+  repository_evidence: { kind: "pull_request" | "workflow"; title: string; summary: string; relevance: string; citations: Citation[] }[];
   impacted_files: { path: string; reason: string; risk_level: string; citations: Citation[] }[];
   implementation_tasks: { title: string; description: string; affected_files: string[]; acceptance_criteria: string[]; citations: Citation[] }[];
   acceptance_criteria: string[];
@@ -21,13 +22,14 @@ type Report = {
 };
 type Step = { key: string; label: string; status: string; summary?: string; duration_ms?: number };
 type Investigation = {
-  id: string; repository: string; issue_number: number; mode: string; status: string;
+  id: string; repository: string; issue_number: number; mode: string; locale: Locale; status: string;
   report?: Report; approved_report?: Report; error?: string; token_usage: number;
   estimated_cost_usd: string; steps: Step[];
-  tool_calls: { tool_name: string; duration_ms: number }[];
+  tool_calls: { tool_name: string; input_summary: Record<string, unknown>; output_summary: Record<string, unknown>; duration_ms: number }[];
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const LIVE_DEMO_REPOSITORY = process.env.NEXT_PUBLIC_LIVE_DEMO_REPOSITORY || "c-y-s-s/frontend-agent-demo-shop";
 const terminalStatuses = new Set(["waiting_approval", "approved", "rejected", "failed"]);
 
 function Icon({ name }: { name: "repo" | "issue" | "branch" | "spark" | "check" | "arrow" | "shield" }) {
@@ -89,7 +91,7 @@ function TaskInvestigator({ locale, onLocaleChange }: { locale: Locale; onLocale
     try {
       const response = await fetch(`${API_URL}/api/v1/investigations`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repository, issue_number: Number(issueNumber), branch, include_pull_requests: true, mode }),
+        body: JSON.stringify({ repository, issue_number: Number(issueNumber), branch, include_pull_requests: true, mode, locale }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.detail || t("errors.start"));
@@ -120,28 +122,50 @@ function TaskInvestigator({ locale, onLocaleChange }: { locale: Locale; onLocale
     : sourceReport;
   const inProgress = investigation && !terminalStatuses.has(investigation.status);
 
+  function stepSummary(step: Step): string | null {
+    if (!step.summary || !investigation) return null;
+    if (locale === "en") return step.summary;
+    if (investigation.mode === "replay") return t(`trace.stepSummaries.${step.key}`);
+
+    const toolNames: Record<string, string> = {
+      read_issue: "get_issue",
+      search_code: "search_repository",
+      read_files: "read_repository_files",
+      search_prs: "search_pull_requests",
+      check_ci: "get_workflow_runs",
+      analyze: "openai_responses",
+    };
+    const call = investigation.tool_calls.find((item) => item.tool_name === toolNames[step.key]);
+    const count = typeof call?.output_summary.items === "number" ? call.output_summary.items : 0;
+
+    if (step.key === "read_issue") return t("trace.liveStepSummaries.read_issue", { issue: investigation.issue_number });
+    if (step.key === "plan") {
+      const planCall = investigation.tool_calls.find((item) => item.tool_name === "openai_plan_search");
+      const terms = Array.isArray(planCall?.output_summary.search_terms) ? planCall.output_summary.search_terms.join("、") : "";
+      return t("trace.liveStepSummaries.plan", { terms });
+    }
+    if (["search_code", "read_files", "search_prs", "check_ci"].includes(step.key)) {
+      return t(`trace.liveStepSummaries.${step.key}`, { count });
+    }
+    if (step.key === "analyze") return t("trace.liveStepSummaries.analyze", { tasks: report?.implementation_tasks.length || 0, risks: report?.risks.length || 0 });
+    if (step.key === "approval") return t("trace.liveStepSummaries.approval");
+    return step.summary;
+  }
+
   return (
     <main>
       <header className="topbar">
-        <a className="brand" href="#top" aria-label={t("navigation.home")}><span className="brand-mark"><Icon name="spark" /></span><span>Task Investigator</span></a>
-        <nav aria-label={t("navigation.aria")}><a href="#workspace">{t("navigation.workspace")}</a><a href="#architecture">{t("navigation.architecture")}</a><a href="https://github.com" target="_blank" rel="noreferrer">GitHub <Icon name="arrow" /></a></nav>
-        <div className="topbar-actions"><div className="locale-switcher" role="group" aria-label={t("language.label")}><button className={locale === "zh-TW" ? "active" : ""} onClick={() => onLocaleChange("zh-TW")} aria-pressed={locale === "zh-TW"}>{t("language.zh")}</button><button className={locale === "en" ? "active" : ""} onClick={() => onLocaleChange("en")} aria-pressed={locale === "en"}>{t("language.en")}</button></div><span className="build-badge"><span className="live-dot" /> MVP • v0.1</span></div>
+        <a className="brand" href="#workspace" aria-label={t("navigation.home")}><span className="brand-mark"><Icon name="spark" /></span><span>Task Investigator</span></a>
+        <div className="topbar-actions"><span className="environment-status"><i /> {t("workspace.local")}</span><div className="locale-switcher" role="group" aria-label={t("language.label")}><button className={locale === "zh-TW" ? "active" : ""} onClick={() => onLocaleChange("zh-TW")} aria-pressed={locale === "zh-TW"}>{t("language.zh")}</button><button className={locale === "en" ? "active" : ""} onClick={() => onLocaleChange("en")} aria-pressed={locale === "en"}>{t("language.en")}</button></div></div>
       </header>
 
-      <section className="hero" id="top">
-        <div className="eyebrow"><Icon name="spark" /> {t("hero.eyebrow")}</div>
-        <h1>{t("hero.title")}<br /><em>{t("hero.emphasis")}</em></h1>
-        <p>{t("hero.description")}</p>
-        <div className="proof-row"><span><Icon name="shield" /> {t("hero.readOnly")}</span><span><Icon name="check" /> {t("hero.approval")}</span><span><Icon name="repo" /> {t("hero.citations")}</span></div>
-      </section>
-
       <section className="workspace" id="workspace">
-        <div className="section-heading"><div><span className="section-number">01</span><h2>{t("form.title")}</h2></div><p>{t("form.description")}</p></div>
+        <div className="workspace-heading"><div><span>{t("workspace.kicker")}</span><h1>{t("workspace.title")}</h1><p>{t("workspace.description")}</p></div><div className="workflow-preview" aria-label={t("hero.flowAria")}><span>{t("hero.flowIssue")}</span><i>→</i><span>{t("hero.flowAgent")}</span><i>→</i><span>{t("hero.flowPlan")}</span></div></div>
         <form className="investigation-form" onSubmit={startInvestigation}>
           <label><span><Icon name="repo" /> {t("form.repository")}</span><input value={repository} onChange={(e) => setRepository(e.target.value)} disabled={mode === "replay"} aria-label={t("form.repoAria")} /></label>
           <label className="small-field"><span><Icon name="issue" /> {t("form.issue")}</span><input type="number" min="1" value={issueNumber} onChange={(e) => setIssueNumber(e.target.value)} disabled={mode === "replay"} aria-label={t("form.issueAria")} /></label>
           <label className="small-field"><span><Icon name="branch" /> {t("form.branch")}</span><input value={branch} onChange={(e) => setBranch(e.target.value)} disabled={mode === "replay"} aria-label={t("form.branchAria")} /></label>
-          <div className="mode-picker" role="group" aria-label={t("form.modeAria")}><button type="button" className={mode === "replay" ? "selected" : ""} onClick={() => { setMode("replay"); setRepository("demo/frontend-agent-demo-shop"); setIssueNumber("128"); }}>{t("form.replay")}</button><button type="button" className={mode === "live" ? "selected" : ""} onClick={() => setMode("live")}>{t("form.live")}</button></div>
+          <div className="mode-picker" role="group" aria-label={t("form.modeAria")}><button type="button" className={mode === "replay" ? "selected" : ""} onClick={() => { setMode("replay"); setRepository("demo/frontend-agent-demo-shop"); setIssueNumber("128"); }}>{t("form.replay")}</button><button type="button" className={mode === "live" ? "selected" : ""} onClick={() => { setMode("live"); setRepository(LIVE_DEMO_REPOSITORY); setIssueNumber("1"); }}>{t("form.live")}</button></div>
           <button className="run-button" type="submit" disabled={loading}>{loading ? t("form.running") : <><Icon name="spark" /> {t("form.run")}</>}</button>
         </form>
         {notice && <div className="notice" role="status">{notice}</div>}
@@ -152,12 +176,15 @@ function TaskInvestigator({ locale, onLocaleChange }: { locale: Locale; onLocale
           <div className="panel-kicker">{t("trace.title")}</div>
           <h3>{investigation ? t("trace.steps", { completed: completedSteps, total: investigation.steps.length }) : t("trace.starting")}</h3>
           <div className="timeline">
-            {investigation?.steps.map((step) => <div className={`timeline-step ${step.status}`} key={step.key}>
-              <span className="step-marker">{step.status === "completed" ? "✓" : step.status === "running" ? "•" : ""}</span>
-              <div><strong>{t(`trace.stepLabels.${step.key}`)}</strong>{step.summary && <p>{locale === "zh-TW" ? t(`trace.stepSummaries.${step.key}`) : step.summary}</p>}{step.duration_ms != null && <small>{(step.duration_ms / 1000).toFixed(2)}s</small>}</div>
-            </div>)}
+            {investigation?.steps.map((step) => {
+              const summary = stepSummary(step);
+              return <div className={`timeline-step ${step.status}`} key={step.key}>
+                <span className="step-marker">{step.status === "completed" ? "✓" : step.status === "running" ? "•" : ""}</span>
+                <div><strong>{t(`trace.stepLabels.${step.key}`)}</strong>{summary && <p>{summary}</p>}{step.duration_ms != null && <small>{(step.duration_ms / 1000).toFixed(2)}s</small>}</div>
+              </div>;
+            })}
           </div>
-          {investigation && <div className="run-meta"><div><span>{t("trace.mode")}</span><strong>{t(`mode.${investigation.mode}`)}</strong></div><div><span>{t("trace.tokens")}</span><strong>{investigation.token_usage.toLocaleString(locale)}</strong></div><div><span>{t("trace.cost")}</span><strong>${investigation.estimated_cost_usd}</strong></div></div>}
+          {investigation && <div className="run-meta"><div><span>{t("trace.mode")}</span><strong>{t(`mode.${investigation.mode}`)}</strong></div><div><span>{t("trace.tokens")}</span><strong>{investigation.token_usage.toLocaleString(locale)}</strong></div><div><span>{t("trace.cost")}</span><strong>{investigation.token_usage > 0 && investigation.estimated_cost_usd === "0.00" ? t("trace.costUnavailable") : `$${investigation.estimated_cost_usd}`}</strong></div></div>}
         </aside>
 
         <div className="report-panel">
@@ -170,11 +197,6 @@ function TaskInvestigator({ locale, onLocaleChange }: { locale: Locale; onLocale
         </div>
       </section>}
 
-      <section className="architecture" id="architecture">
-        <div className="section-heading"><div><span className="section-number">02</span><h2>{t("architecture.title")}</h2></div><p>{t("architecture.description")}</p></div>
-        <div className="architecture-grid"><article><span>01</span><h3>{t("architecture.toolsTitle")}</h3><p>{t("architecture.toolsBody")}</p></article><article><span>02</span><h3>{t("architecture.groundedTitle")}</h3><p>{t("architecture.groundedBody")}</p></article><article><span>03</span><h3>{t("architecture.controlTitle")}</h3><p>{t("architecture.controlBody")}</p></article></div>
-      </section>
-      <footer><div className="brand"><span className="brand-mark"><Icon name="spark" /></span><span>Task Investigator</span></div><p>Next.js · FastAPI · OpenAI Responses API · PostgreSQL</p><span>{t("footer")}</span></footer>
     </main>
   );
 }
@@ -184,6 +206,7 @@ function ReportView({ report }: { report: Report }) {
   return <div className="report-content">
     <section className="summary-block"><span className="report-label">{t("summary")}</span><h2>{report.requirement_summary}</h2><div className="confidence"><span className={`confidence-dot ${report.confidence.level}`} /> <strong>{t("confidence", { level: t(`levels.${report.confidence.level}`) })}</strong><p>{report.confidence.reason}</p></div></section>
     {report.clarification_questions.length > 0 && <section><div className="report-section-title"><span>{t("questions")}</span><b>{report.clarification_questions.length}</b></div><ol className="question-list">{report.clarification_questions.map((question) => <li key={question}>{question}</li>)}</ol></section>}
+    {report.repository_evidence.length > 0 && <section><div className="report-section-title"><span>{t("evidenceTitle")}</span><b>{report.repository_evidence.length}</b></div><div className="evidence-list">{report.repository_evidence.map((item) => <article key={`${item.kind}-${item.title}`}><div><span>{t(`evidenceKinds.${item.kind}`)}</span><h3>{item.title}</h3></div><p>{item.summary}</p><small>{item.relevance}</small><div className="citations">{item.citations.map((citation) => <CitationLink citation={citation} key={citation.url} />)}</div></article>)}</div></section>}
     <section><div className="report-section-title"><span>{t("files")}</span><b>{report.impacted_files.length}</b></div><div className="file-list">{report.impacted_files.map((file) => <article key={file.path}><div className="file-heading"><code>{file.path}</code><span className={`risk-tag ${file.risk_level}`}>{t(`levels.${file.risk_level}`)}</span></div><p>{file.reason}</p><div className="citations">{file.citations.map((citation) => <CitationLink citation={citation} key={citation.url} />)}</div></article>)}</div></section>
     <section><div className="report-section-title"><span>{t("plan")}</span><b>{report.implementation_tasks.length}</b></div><div className="task-list">{report.implementation_tasks.map((task, index) => <article key={task.title}><span className="task-number">{String(index + 1).padStart(2, "0")}</span><div><h3>{task.title}</h3><p>{task.description}</p><ul>{task.acceptance_criteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul><div className="citations">{task.citations.map((citation) => <CitationLink citation={citation} key={citation.url} />)}</div></div></article>)}</div></section>
     <section><div className="report-section-title"><span>{t("risks")}</span><b>{report.risks.length}</b></div><div className="risk-list">{report.risks.map((risk) => <article key={risk.title}><div><span className={`risk-indicator ${risk.severity}`} /><h3>{risk.title}</h3><span className="evidence-tag">{t(`evidence.${risk.evidence_type}`)}</span></div><p>{risk.explanation}</p><div className="citations">{risk.citations.map((citation) => <CitationLink citation={citation} key={citation.url} />)}</div></article>)}</div></section>

@@ -4,6 +4,22 @@
     "哪些金流供應商錯誤碼屬於可安全重試的暫時性錯誤？",
     "重試延遲應採固定間隔，還是指數退避？"
   ],
+  "repository_evidence": [
+    {
+      "kind": "pull_request",
+      "title": "統一付款供應商錯誤",
+      "summary": "相關 PR 建立了可重試與永久性付款錯誤分類，但尚未實作自動重試。",
+      "relevance": "新的重試流程應沿用既有錯誤契約，不應在 UI 重複判斷供應商錯誤。",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/pull/42", "label": "PR #42", "kind": "pull_request"}]
+    },
+    {
+      "kind": "workflow",
+      "title": "Main branch CI 通過",
+      "summary": "最近一次 CI 紀錄已成功完成。",
+      "relevance": "這只代表目前基線檢查通過，不代表尚未實作的重試行為正確。",
+      "citations": [{"url": "https://github.com/demo/frontend-agent-demo-shop/actions/runs/1001", "label": "CI run #1001", "kind": "workflow"}]
+    }
+  ],
   "impacted_files": [
     {
       "path": "src/lib/paymentApi.ts",

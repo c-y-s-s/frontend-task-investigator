@@ -30,6 +30,7 @@ class Investigation(Base):
     branch: Mapped[str] = mapped_column(String(120), default="main")
     include_pull_requests: Mapped[bool] = mapped_column(default=True)
     mode: Mapped[str] = mapped_column(String(20), default="replay")
+    locale: Mapped[str] = mapped_column(String(10), default="zh-TW")
     requester_ip: Mapped[str] = mapped_column(String(64), default="unknown")
     status: Mapped[InvestigationStatus] = mapped_column(
         Enum(InvestigationStatus), default=InvestigationStatus.queued, index=True
@@ -90,4 +91,3 @@ class AuditLog(Base):
     detail: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     investigation: Mapped[Investigation] = relationship(back_populates="audit_logs")
-

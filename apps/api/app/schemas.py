@@ -1,12 +1,30 @@
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from urllib.parse import urlparse
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Citation(BaseModel):
-    url: HttpUrl
+    # Keep the model-facing JSON Schema to a plain string. OpenAI Structured
+    # Outputs rejects Pydantic's `format: uri`, so URL safety is enforced after
+    # parsing instead of encoded as a JSON Schema format.
+    url: str
     label: str
     kind: Literal["file", "issue", "pull_request", "workflow", "inference"]
+
+    @field_validator("url")
+    @classmethod
+    def validate_http_url(cls, value: str) -> str:
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("Citation URL must be an absolute HTTP(S) URL")
+        return value
+
+
+class SearchPlan(BaseModel):
+    search_terms: list[str] = Field(min_length=2, max_length=6)
+    path_hints: list[str] = Field(max_length=4)
+    rationale: str
 
 
 class ImpactedFile(BaseModel):
@@ -37,9 +55,18 @@ class Confidence(BaseModel):
     reason: str
 
 
+class RepositoryEvidence(BaseModel):
+    kind: Literal["pull_request", "workflow"]
+    title: str
+    summary: str
+    relevance: str
+    citations: list[Citation] = Field(min_length=1)
+
+
 class InvestigationReport(BaseModel):
     requirement_summary: str
     clarification_questions: list[str]
+    repository_evidence: list[RepositoryEvidence]
     impacted_files: list[ImpactedFile]
     implementation_tasks: list[ImplementationTask]
     acceptance_criteria: list[str]
@@ -48,7 +75,7 @@ class InvestigationReport(BaseModel):
 
     @model_validator(mode="after")
     def validate_grounding(self):
-        for item in [*self.impacted_files, *self.implementation_tasks, *self.risks]:
+        for item in [*self.repository_evidence, *self.impacted_files, *self.implementation_tasks, *self.risks]:
             if not item.citations:
                 raise ValueError("Every finding must include at least one citation")
         return self
@@ -60,6 +87,7 @@ class InvestigationCreate(BaseModel):
     branch: str = Field(default="main", min_length=1, max_length=120)
     include_pull_requests: bool = True
     mode: Literal["replay", "live"] = "replay"
+    locale: Literal["zh-TW", "en"] = "zh-TW"
 
 
 class ApprovalRequest(BaseModel):
@@ -99,6 +127,7 @@ class InvestigationRead(BaseModel):
     branch: str
     include_pull_requests: bool
     mode: str
+    locale: str
     status: str
     report: InvestigationReport | None
     approved_report: InvestigationReport | None
@@ -109,4 +138,3 @@ class InvestigationRead(BaseModel):
     updated_at: datetime
     steps: list[WorkflowStepRead]
     tool_calls: list[ToolCallRead]
-

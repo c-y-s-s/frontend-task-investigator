@@ -1,0 +1,17 @@
+{
+  "repository": "c-y-s-s/frontend-agent-demo-shop",
+  "issue_number": 4,
+  "expected_impacted_files": [
+    "src/cart/cartStorage.ts",
+    "src/cart/cartStorage.test.ts",
+    "src/cart/cartStore.ts",
+    "src/cart/useCart.ts"
+  ],
+  "expected_pull_request": 3,
+  "expected_workflow_conclusion": "success",
+  "required_risks": [
+    "malformed or structurally invalid storage data",
+    "browser-only localStorage during server rendering",
+    "state and storage synchronization"
+  ]
+}

@@ -3,26 +3,28 @@
     "metaTitle": "Task Investigator — Evidence-backed engineering plans",
     "navigation": {"aria": "Primary navigation", "workspace": "Workspace", "architecture": "Architecture", "home": "Task Investigator home"},
     "language": {"label": "Language", "zh": "中文", "en": "EN"},
+    "workspace": {"local": "Local", "kicker": "Workspace", "title": "Investigate a GitHub task", "description": "Enter an issue to map code impact and generate an implementation plan."},
     "hero": {
-      "eyebrow": "AGENT-POWERED ENGINEERING WORKFLOW", "title": "Turn a GitHub Issue into an", "emphasis": "evidence-backed plan.",
-      "description": "Investigate requirements across code, pull requests, and CI. Review every claim, then approve the implementation draft.",
+      "eyebrow": "GITHUB TASK INVESTIGATION AGENT", "title": "From issue to", "emphasis": "actionable plan",
+      "description": "An agent searches code and history to produce implementation guidance with sources.",
+      "flowAria": "Investigation workflow", "flowIssue": "Issue", "flowAgent": "Agent research", "flowPlan": "Action plan",
       "readOnly": "Read-only tools", "approval": "Human approval", "citations": "Source citations"
     },
     "form": {
-      "title": "Start an investigation", "description": "Use the replay case for a zero-cost, deterministic walkthrough.",
+      "title": "Start investigation", "description": "",
       "repository": "Repository", "issue": "Issue", "branch": "Branch", "modeAria": "Analysis mode", "replay": "Replay", "live": "Live",
       "run": "Run analysis", "running": "Investigating…", "repoAria": "GitHub repository", "issueAria": "Issue number", "branchAria": "Branch"
     },
     "errors": {"disconnected": "Live updates disconnected. Refresh the analysis to try again.", "start": "Could not start investigation", "unreachable": "Could not reach the API", "decision": "Decision failed"},
     "notices": {"approved": "Draft approved and recorded in the audit log.", "rejected": "Draft rejected and recorded in the audit log."},
     "trace": {
-      "title": "AGENT TRACE", "steps": "{completed}/{total} steps", "starting": "Starting…", "mode": "Mode", "tokens": "Tokens", "cost": "Est. cost",
+      "title": "AGENT TRACE", "steps": "{completed}/{total} steps", "starting": "Starting…", "mode": "Mode", "tokens": "Tokens", "cost": "Est. cost", "costUnavailable": "Not configured",
       "stepLabels": {"read_issue": "Read GitHub Issue", "plan": "Plan investigation", "search_code": "Search repository", "read_files": "Inspect candidate files", "search_prs": "Find related pull requests", "check_ci": "Check workflow status", "analyze": "Generate grounded report", "approval": "Wait for human approval"},
       "stepSummaries": {"read_issue": "Loaded Issue #128", "plan": "Selected payment, retry, checkout, and idempotency search terms", "search_code": "Found 12 candidates", "read_files": "Inspected 4 relevant files", "search_prs": "Found 2 related PRs", "check_ci": "Latest workflow passed", "analyze": "Generated 3 tasks and 3 risks", "approval": "Review the draft before approval"}
     },
     "report": {
-      "tab": "Investigation report", "toolsTab": "Tool calls", "stopped": "Investigation stopped", "building": "Building an evidence graph…", "preparing": "Preparing analysis…", "gathering": "The agent is gathering only the context it needs.",
-      "summary": "REQUIREMENT SUMMARY", "confidence": "{level} confidence", "questions": "Open questions", "files": "Impacted files", "plan": "Implementation plan", "risks": "Risk register",
+      "tab": "Report", "toolsTab": "Tool calls", "stopped": "Investigation stopped", "building": "Analyzing…", "preparing": "Preparing…", "gathering": "Collecting GitHub evidence",
+      "summary": "REQUIREMENT SUMMARY", "confidence": "{level} confidence", "questions": "Open questions", "files": "Impacted files", "plan": "Implementation plan", "risks": "Risk register", "evidenceTitle": "Repository evidence", "evidenceKinds": {"pull_request": "Pull request", "workflow": "CI workflow"},
       "levels": {"high": "high", "medium": "medium", "low": "low"}, "evidence": {"direct": "direct", "inference": "inference"}
     },
     "approval": {"checkpoint": "HUMAN CHECKPOINT", "description": "Review the evidence before accepting this draft.", "reject": "Reject", "approve": "Approve draft"},
@@ -34,6 +36,6 @@
       "groundedTitle": "Grounded output", "groundedBody": "Files, tasks, and risks require citations or an explicit inference label.",
       "controlTitle": "Human control", "controlBody": "No external state changes. Approval records a reviewed draft and audit event."
     },
-    "footer": "Portfolio MVP / 2026"
+    "footer": "Portfolio project"
   }
 }

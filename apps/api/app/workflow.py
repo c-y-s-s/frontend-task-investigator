@@ -108,14 +108,35 @@ def _run_replay(db, investigation: Investigation):
 
 def _run_live(db, investigation: Investigation, settings):
     github = GitHubClient(settings)
+    analyzer = OpenAIAnalyzer(settings)
     investigation.status = InvestigationStatus.fetching_context
     db.commit()
     issue = _run_tool(db, investigation, "read_issue", "get_issue", lambda: github.get_issue(investigation.repository, investigation.issue_number), {"repository": investigation.repository, "issue_number": investigation.issue_number})
 
     _step(db, investigation, "plan", "running")
-    terms = list(dict.fromkeys(word.lower() for word in (issue["title"] + " " + issue["body"]).replace("/", " ").split() if len(word) >= 5))[:6]
-    _step(db, investigation, "plan", "completed", f"Search terms: {', '.join(terms)}", 1)
-    files = _run_tool(db, investigation, "search_code", "search_repository", lambda: github.search_repository(investigation.repository, terms), {"terms": terms})
+    plan_started = time.perf_counter()
+    search_plan, planning_tokens = analyzer.plan_search(issue)
+    plan_duration = int((time.perf_counter() - plan_started) * 1000)
+    terms = list(dict.fromkeys(term.strip() for term in search_plan.search_terms if term.strip()))[:6]
+    path_hints = list(dict.fromkeys(hint.strip() for hint in search_plan.path_hints if hint.strip()))[:4]
+    investigation_terms = list(dict.fromkeys([*terms, *path_hints]))
+    _record_tool(
+        db,
+        investigation,
+        "openai_plan_search",
+        {"model": settings.openai_model, "issue_number": investigation.issue_number},
+        {"search_terms": terms, "path_hints": path_hints, "rationale": search_plan.rationale, "tokens": planning_tokens},
+        plan_duration,
+    )
+    _step(db, investigation, "plan", "completed", f"Search terms: {', '.join(terms)}", plan_duration)
+    files = _run_tool(
+        db,
+        investigation,
+        "search_code",
+        "search_repository",
+        lambda: github.search_repository(investigation.repository, investigation.branch, investigation_terms),
+        {"branch": investigation.branch, "terms": investigation_terms},
+    )
     contents = _run_tool(db, investigation, "read_files", "read_repository_files", lambda: github.read_repository_files(investigation.repository, investigation.branch, [item["path"] for item in files]), {"file_count": len(files)})
     prs = []
     if investigation.include_pull_requests:
@@ -128,13 +149,15 @@ def _run_live(db, investigation: Investigation, settings):
     db.commit()
     _step(db, investigation, "analyze", "running")
     started = time.perf_counter()
-    report, tokens = OpenAIAnalyzer(settings).analyze({"issue": issue, "candidate_files": contents, "related_pull_requests": prs, "workflow_runs": workflows})
+    report, report_tokens = analyzer.analyze(
+        {"issue": issue, "candidate_files": contents, "related_pull_requests": prs, "workflow_runs": workflows},
+        locale=investigation.locale,
+    )
     duration = int((time.perf_counter() - started) * 1000)
-    _record_tool(db, investigation, "openai_responses", {"model": settings.openai_model, "files": len(contents)}, {"structured": True, "tokens": tokens}, duration)
+    _record_tool(db, investigation, "openai_responses", {"model": settings.openai_model, "files": len(contents), "locale": investigation.locale}, {"structured": True, "tokens": report_tokens}, duration)
     _step(db, investigation, "analyze", "completed", f"Generated {len(report.implementation_tasks)} tasks and {len(report.risks)} risks", duration)
     investigation.report = report.model_dump(mode="json")
-    investigation.token_usage = tokens
+    investigation.token_usage = planning_tokens + report_tokens
     investigation.status = InvestigationStatus.waiting_approval
     _step(db, investigation, "approval", "running", "Review the draft before approval")
     db.commit()
-
