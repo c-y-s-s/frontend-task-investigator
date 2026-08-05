@@ -47,6 +47,14 @@ def test_bug_replay_approval_is_state_guarded(client):
     assert duplicate.status_code == 409
 
 
+def test_bug_rejection_persists_human_reason(client):
+    result = create_replay(client)
+    rejected = client.post(f"/api/v1/bug-investigations/{result['id']}/reject", json={"actor": "reviewer", "reason": "Missing a reproducible browser signal"})
+    assert rejected.status_code == 200
+    assert rejected.json()["status"] == "rejected"
+    assert rejected.json()["rejection_reason"] == "Missing a reproducible browser signal"
+
+
 def test_bug_live_rejects_non_allowlisted_repository(client):
     response = client.post("/api/v1/bug-investigations", json={
         "title": "A sufficiently long bug title", "repository": "someone/private",

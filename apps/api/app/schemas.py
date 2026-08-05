@@ -271,6 +271,7 @@ class BugInvestigationRead(BaseModel):
     tool_calls: list[dict]
     report: BugInvestigationReport | None
     approved_report: BugInvestigationReport | None
+    rejection_reason: str | None
     error: str | None
     token_usage: int
     created_at: datetime

@@ -132,6 +132,7 @@ class BugInvestigation(Base):
     tool_calls: Mapped[list] = mapped_column(JSON, default=list)
     report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     approved_report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     token_usage: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

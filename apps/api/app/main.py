@@ -78,7 +78,7 @@ def query_bug_investigation(db: Session, investigation_id: str) -> BugInvestigat
 def create_bug_investigation(payload: BugInvestigationCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if payload.mode == "live" and payload.repository.lower() not in settings.allowed_repos:
         raise HTTPException(status_code=403, detail="Repository is not allowed in live mode")
-    item = BugInvestigation(**payload.model_dump(), steps=initial_steps(), tool_calls=[])
+    item = BugInvestigation(**payload.model_dump(), steps=initial_steps(payload.locale), tool_calls=[])
     db.add(item); db.commit()
     background_tasks.add_task(run_bug_investigation, item.id)
     return query_bug_investigation(db, item.id)
@@ -128,7 +128,9 @@ def reject_bug_investigation(investigation_id: str, payload: RejectionRequest, d
     item = query_bug_investigation(db, investigation_id)
     if item.status != InvestigationStatus.waiting_approval:
         raise HTTPException(status_code=409, detail="Only a waiting draft can be rejected")
-    item.status = InvestigationStatus.rejected; db.commit()
+    item.status = InvestigationStatus.rejected
+    item.rejection_reason = payload.reason
+    db.commit()
     return item
 
 

@@ -22,8 +22,9 @@ STEPS = [
 ]
 
 
-def initial_steps() -> list[dict]:
-    return [{"position": i, "key": key, "label": label, "status": "pending", "summary": None, "duration_ms": None} for i, (key, label) in enumerate(STEPS)]
+def initial_steps(locale: str = "zh-TW") -> list[dict]:
+    english = ["Normalize error evidence", "Search repository", "Inspect candidate files", "Find related pull requests", "Generate hypotheses", "Wait for human approval"]
+    return [{"position": i, "key": key, "label": english[i] if locale == "en" else label, "status": "pending", "summary": None, "duration_ms": None} for i, (key, label) in enumerate(STEPS)]
 
 
 def _update_step(db, item, key: str, status: str, summary: str | None = None, duration: int | None = None) -> None:
