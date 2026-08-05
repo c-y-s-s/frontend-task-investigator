@@ -224,6 +224,8 @@ Open `http://localhost:3000/api-analyzer`. The default Response JSON mode accept
 
 Known-contract notes are context, not evidence discovered from Swagger. Do not paste credentials or tokens. Common secret patterns are redacted before Live AI, and both the original response JSON and raw contract notes are cleared from persistence when the analysis finishes. The structured report retains only the sanitized rules it used.
 
+The prefilled contract is fictional Demo data that answers authentication, pagination errors, unsupported filtering, default sorting, and date formatting. Replace it before analyzing a real endpoint; its values must not be treated as facts about another backend.
+
 The analyzer infers field types and nullability, detects pagination and personal-data fields, produces a TypeScript draft, and separates direct observations from facts that still require backend confirmation. If the report still has questions, ask the backend engineer or PM, add the answers to Known API contract, and run it again.
 
 Switch to OpenAPI Document mode to paste an OpenAPI 3.x JSON or YAML document. Replay performs deterministic checks without OpenAI; Live uses the same bounded and sanitized parser output as evidence for a structured AI report.

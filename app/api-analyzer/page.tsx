@@ -88,7 +88,15 @@ export default function ApiAnalyzerPage() {
   const [inputType, setInputType] = useState<"response" | "openapi">("response");
   const [document, setDocument] = useState(RESPONSE_SAMPLE);
   const [purpose, setPurpose] = useState("在管理後台顯示申請列表，支援分頁與狀態查看。");
-  const [knownContract, setKnownContract] = useState("application_kind: personal | company\nmail_status: pending | sent | failed\n分頁參數: page, page_size（預設 30，最大 100）");
+  const [knownContract, setKnownContract] = useState(`【Demo 範例契約，分析真實 API 時請替換】
+application_kind: personal | company
+mail_status: pending | sent | failed
+分頁參數: page、page_size；page 預設 1，page_size 預設 30、最大 100
+分頁參數無效或超過範圍時回傳 HTTP 422，格式: { "error": { "code": string, "message": string } }
+超出總頁數時回傳 HTTP 200，data 為空陣列，meta 保留實際分頁資訊
+驗證方式: Bearer Token；未驗證回傳 401、權限不足回傳 403，沿用相同 error 格式
+此端點目前不支援篩選、排序或搜尋；預設依 created_at 由新到舊排序
+created_at 保證為包含時區位移的 RFC 3339 字串`);
   const [method, setMethod] = useState("GET");
   const [path, setPath] = useState("/applications");
   const [mode, setMode] = useState<"replay" | "live">("replay");
