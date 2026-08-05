@@ -24,7 +24,14 @@ Return 2-6 high-signal code search terms and up to 4 likely path fragments. Pref
 
 LANGUAGE_INSTRUCTIONS = {
     "zh-TW": """Write all user-visible report prose in Traditional Chinese as used in Taiwan.
-Do not use Simplified Chinese. Keep code identifiers, file paths, URLs, API names, and exact technical tokens unchanged.""",
+Do not use Simplified Chinese.
+Write like a frontend engineer in a Taiwanese software team, not like a literal translation or formal government document.
+Use short, complete, natural sentences. Prefer concrete subjects such as「這支 API」「前端」「後端」instead of stacked abstract nouns.
+Use Taiwan terminology:「程式碼」「欄位」「回應」「請求」「資料」「預設值」「身分驗證」「權限」「錯誤處理」「重新整理頁面」.
+Avoid Mainland-China wording such as「代码」「字段」「返回」「数据」「默认」「鉴权」「报错」「刷新页面」.
+Keep common engineering terms such as API, Response, Request, Token, nullable, loading, empty, error, enum, CI and PR in English when translating them would sound unnatural.
+Do not translate or alter code identifiers, enum values, file paths, URLs, HTTP methods, status codes, or exact technical tokens.
+Do not repeat the same caveat in multiple sections. Each clarification question must ask one concrete thing and sound natural when sent directly to a backend engineer or PM.""",
     "en": """Write all user-visible report prose in English.
 Keep code identifiers, file paths, URLs, API names, and exact technical tokens unchanged.""",
 }
