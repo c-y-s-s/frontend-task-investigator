@@ -13,7 +13,7 @@ from .api_analysis_workflow import run_api_analysis
 from .bug_workflow import initial_steps, run_bug_investigation
 from .code_review_workflow import initial_steps as review_steps, run_code_review
 from .models import ApiAnalysis, AuditLog, BugInvestigation, CodeReview, Investigation, InvestigationStatus
-from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, BugInvestigationApproval, BugInvestigationCreate, BugInvestigationRead, CodeReviewApproval, CodeReviewCreate, CodeReviewRead, InvestigationCreate, InvestigationRead, RejectionRequest
+from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, BugInvestigationApproval, BugInvestigationCreate, BugInvestigationRead, CodeReviewApproval, CodeReviewCreate, CodeReviewRead, HistoryItem, InvestigationCreate, InvestigationRead, RejectionRequest
 from .workflow import run_investigation, seed_steps
 
 
@@ -59,6 +59,25 @@ def enforce_live_limits(db: Session, requester_ip: str, repository: str) -> None
 @app.get("/health")
 def health():
     return {"status": "ok", "service": settings.app_name}
+
+
+@app.get("/api/v1/history", response_model=list[HistoryItem])
+def get_history(db: Session = Depends(get_db)):
+    """Return bounded, non-sensitive workflow metadata for the portfolio UI."""
+    limit_per_kind = 50
+    items: list[HistoryItem] = []
+
+    for item in db.scalars(select(Investigation).order_by(Investigation.created_at.desc()).limit(limit_per_kind)):
+        items.append(HistoryItem(id=item.id, kind="task", target=f"{item.repository} · Issue #{item.issue_number}", mode=item.mode, locale=item.locale, status=item.status.value, token_usage=item.token_usage, approved=item.approved_report is not None, created_at=item.created_at, detail_path=f"/api/v1/investigations/{item.id}"))
+    for item in db.scalars(select(ApiAnalysis).order_by(ApiAnalysis.created_at.desc()).limit(limit_per_kind)):
+        endpoint = " ".join(value for value in [item.method, item.path] if value)
+        items.append(HistoryItem(id=item.id, kind="api", target=endpoint or item.purpose or "API analysis", mode=item.mode, locale=item.locale, status=item.status.value, token_usage=item.token_usage, approved=item.approved_report is not None, created_at=item.created_at, detail_path=f"/api/v1/api-analyses/{item.id}"))
+    for item in db.scalars(select(BugInvestigation).order_by(BugInvestigation.created_at.desc()).limit(limit_per_kind)):
+        items.append(HistoryItem(id=item.id, kind="bug", target=f"{item.repository} · {item.title}", mode=item.mode, locale=item.locale, status=item.status.value, token_usage=item.token_usage, approved=item.approved_report is not None, created_at=item.created_at, detail_path=f"/api/v1/bug-investigations/{item.id}"))
+    for item in db.scalars(select(CodeReview).order_by(CodeReview.created_at.desc()).limit(limit_per_kind)):
+        items.append(HistoryItem(id=item.id, kind="review", target=f"{item.repository} · PR #{item.pull_request_number}", mode=item.mode, locale=item.locale, status=item.status.value, token_usage=item.token_usage, approved=item.approved_report is not None, created_at=item.created_at, detail_path=f"/api/v1/code-reviews/{item.id}"))
+
+    return sorted(items, key=lambda item: item.created_at, reverse=True)[:50]
 
 
 def query_api_analysis(db: Session, analysis_id: str) -> ApiAnalysis:

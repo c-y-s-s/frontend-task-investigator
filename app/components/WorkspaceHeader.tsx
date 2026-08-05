@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type ModuleKey = "task" | "api" | "bug" | "review";
+type ModuleKey = "task" | "api" | "bug" | "review" | "history";
 type Locale = "zh-TW" | "en";
 
 type WorkspaceHeaderProps = {
@@ -16,6 +16,7 @@ const modules: { key: ModuleKey; href: string; label: string }[] = [
   { key: "api", href: "/api-analyzer", label: "API" },
   { key: "bug", href: "/bug-investigator", label: "Bug" },
   { key: "review", href: "/code-review", label: "Code Review" },
+  { key: "history", href: "/history", label: "History" },
 ];
 
 export function WorkspaceHeader({ active, locale, onLocaleChange }: WorkspaceHeaderProps) {

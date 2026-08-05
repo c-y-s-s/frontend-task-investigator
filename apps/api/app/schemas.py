@@ -332,3 +332,16 @@ class CodeReviewRead(BaseModel):
 class CodeReviewApproval(BaseModel):
     report: CodeReviewReport | None = None
     actor: str = Field(default="demo-user", max_length=120)
+
+
+class HistoryItem(BaseModel):
+    id: str
+    kind: Literal["task", "api", "bug", "review"]
+    target: str
+    mode: str
+    locale: str
+    status: str
+    token_usage: int
+    approved: bool
+    created_at: datetime
+    detail_path: str | None = None
