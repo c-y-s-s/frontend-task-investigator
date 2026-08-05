@@ -22,6 +22,7 @@ GitHub Issue → Plan → Code search → File inspection → PR/CI context
 - **Observable execution:** SSE streams workflow state, summaries, tool latency, token usage, and failure status.
 - **API Analyzer:** pasted OpenAPI 3.x JSON/YAML is converted into endpoint summaries, contract gaps, clarification questions, and a frontend integration checklist.
 - **Bug Investigator:** error, Console, and Network evidence is matched with read-only repository context to produce ranked hypotheses and verification actions—not an unverified fix.
+- **Code Review Agent:** one allowlisted GitHub PR is reviewed through bounded patches, evidence-backed severity, and a human acceptance checkpoint without posting back to GitHub.
 
 ## Architecture
 
@@ -222,6 +223,11 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 | GET | `/api/v1/bug-investigations/{id}/events` | Streams bug investigation state with SSE |
 | POST | `/api/v1/bug-investigations/{id}/approve` | Approves an investigation direction |
 | POST | `/api/v1/bug-investigations/{id}/reject` | Rejects an investigation direction |
+| POST | `/api/v1/code-reviews` | Starts Replay or Live PR review |
+| GET | `/api/v1/code-reviews/{id}` | Returns PR review state and findings |
+| GET | `/api/v1/code-reviews/{id}/events` | Streams PR review state with SSE |
+| POST | `/api/v1/code-reviews/{id}/approve` | Accepts the generated review result |
+| POST | `/api/v1/code-reviews/{id}/reject` | Rejects the review and saves a reason |
 | GET | `/health` | Deployment health check |
 
 ## API Analyzer

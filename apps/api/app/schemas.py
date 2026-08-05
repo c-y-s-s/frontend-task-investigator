@@ -281,3 +281,54 @@ class BugInvestigationRead(BaseModel):
 class BugInvestigationApproval(BaseModel):
     report: BugInvestigationReport | None = None
     actor: str = Field(default="demo-user", max_length=120)
+
+
+class CodeReviewCreate(BaseModel):
+    repository: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    pull_request_number: int = Field(gt=0)
+    mode: Literal["replay", "live"] = "replay"
+    locale: Literal["zh-TW", "en"] = "zh-TW"
+
+
+class ReviewFinding(BaseModel):
+    severity: Literal["blocking", "warning", "suggestion"]
+    title: str
+    explanation: str
+    file_path: str
+    line_hint: str
+    verification: str
+    citations: list[Citation] = Field(min_length=1)
+
+
+class CodeReviewReport(BaseModel):
+    pull_request_summary: str
+    verdict: Literal["request_changes", "comment", "approve"]
+    findings: list[ReviewFinding]
+    positive_notes: list[str]
+    missing_context: list[str]
+    reviewed_files: list[str]
+    confidence: Confidence
+
+
+class CodeReviewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    repository: str
+    pull_request_number: int
+    mode: str
+    locale: str
+    status: str
+    steps: list[dict]
+    tool_calls: list[dict]
+    report: CodeReviewReport | None
+    approved_report: CodeReviewReport | None
+    rejection_reason: str | None
+    error: str | None
+    token_usage: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class CodeReviewApproval(BaseModel):
+    report: CodeReviewReport | None = None
+    actor: str = Field(default="demo-user", max_length=120)

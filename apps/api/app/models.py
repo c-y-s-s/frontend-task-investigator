@@ -137,3 +137,22 @@ class BugInvestigation(Base):
     token_usage: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+
+class CodeReview(Base):
+    __tablename__ = "code_reviews"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    repository: Mapped[str] = mapped_column(String(200), index=True)
+    pull_request_number: Mapped[int] = mapped_column(Integer)
+    mode: Mapped[str] = mapped_column(String(20), default="replay")
+    locale: Mapped[str] = mapped_column(String(10), default="zh-TW")
+    status: Mapped[InvestigationStatus] = mapped_column(Enum(InvestigationStatus), default=InvestigationStatus.queued, index=True)
+    steps: Mapped[list] = mapped_column(JSON, default=list)
+    tool_calls: Mapped[list] = mapped_column(JSON, default=list)
+    report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    approved_report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    token_usage: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)

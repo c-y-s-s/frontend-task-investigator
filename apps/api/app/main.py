@@ -11,8 +11,9 @@ from .config import get_settings
 from .database import Base, engine, get_db
 from .api_analysis_workflow import run_api_analysis
 from .bug_workflow import initial_steps, run_bug_investigation
-from .models import ApiAnalysis, AuditLog, BugInvestigation, Investigation, InvestigationStatus
-from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, BugInvestigationApproval, BugInvestigationCreate, BugInvestigationRead, InvestigationCreate, InvestigationRead, RejectionRequest
+from .code_review_workflow import initial_steps as review_steps, run_code_review
+from .models import ApiAnalysis, AuditLog, BugInvestigation, CodeReview, Investigation, InvestigationStatus
+from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, BugInvestigationApproval, BugInvestigationCreate, BugInvestigationRead, CodeReviewApproval, CodeReviewCreate, CodeReviewRead, InvestigationCreate, InvestigationRead, RejectionRequest
 from .workflow import run_investigation, seed_steps
 
 
@@ -72,6 +73,45 @@ def query_bug_investigation(db: Session, investigation_id: str) -> BugInvestigat
     if not item:
         raise HTTPException(status_code=404, detail="Bug investigation not found")
     return item
+
+def query_code_review(db: Session, review_id: str) -> CodeReview:
+    item = db.get(CodeReview, review_id)
+    if not item: raise HTTPException(status_code=404, detail="Code review not found")
+    return item
+
+@app.post("/api/v1/code-reviews", response_model=CodeReviewRead, status_code=202)
+def create_code_review(payload: CodeReviewCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    if payload.mode == "live" and payload.repository.lower() not in settings.allowed_repos: raise HTTPException(status_code=403, detail="Repository is not allowed in live mode")
+    item = CodeReview(**payload.model_dump(), steps=review_steps(payload.locale), tool_calls=[]); db.add(item); db.commit(); background_tasks.add_task(run_code_review, item.id); return query_code_review(db,item.id)
+
+@app.get("/api/v1/code-reviews/{review_id}", response_model=CodeReviewRead)
+def get_code_review(review_id: str, db: Session = Depends(get_db)): return query_code_review(db,review_id)
+
+@app.get("/api/v1/code-reviews/{review_id}/events")
+async def code_review_events(review_id: str):
+    async def stream():
+        previous=None
+        while True:
+            from .database import SessionLocal
+            with SessionLocal() as db:
+                payload=CodeReviewRead.model_validate(query_code_review(db,review_id)).model_dump(mode="json")
+            encoded=json.dumps(payload)
+            if encoded != previous: yield f"event: review\ndata: {encoded}\n\n"; previous=encoded
+            if payload["status"] in {"waiting_approval","approved","rejected","failed"}: yield "event: done\ndata: {}\n\n"; return
+            await asyncio.sleep(.5)
+    return StreamingResponse(stream(),media_type="text/event-stream",headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
+
+@app.post("/api/v1/code-reviews/{review_id}/approve",response_model=CodeReviewRead)
+def approve_code_review(review_id: str,payload: CodeReviewApproval,db: Session=Depends(get_db)):
+    item=query_code_review(db,review_id)
+    if item.status != InvestigationStatus.waiting_approval: raise HTTPException(status_code=409,detail="Only a waiting draft can be approved")
+    item.approved_report=payload.report.model_dump(mode="json") if payload.report else item.report; item.status=InvestigationStatus.approved; db.commit(); return item
+
+@app.post("/api/v1/code-reviews/{review_id}/reject",response_model=CodeReviewRead)
+def reject_code_review(review_id: str,payload: RejectionRequest,db: Session=Depends(get_db)):
+    item=query_code_review(db,review_id)
+    if item.status != InvestigationStatus.waiting_approval: raise HTTPException(status_code=409,detail="Only a waiting draft can be rejected")
+    item.status=InvestigationStatus.rejected; item.rejection_reason=payload.reason; db.commit(); return item
 
 
 @app.post("/api/v1/bug-investigations", response_model=BugInvestigationRead, status_code=202)
