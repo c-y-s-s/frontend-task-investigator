@@ -10,29 +10,43 @@ type Report = { api_title: string; api_version: string; summary: string; endpoin
 type Analysis = { id: string; status: string; report?: Report; approved_report?: Report; error?: string; token_usage: number };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const SAMPLE = `openapi: 3.0.3
-info:
-  title: Demo Orders API
-  version: 1.0.0
-paths:
-  /orders:
-    get:
-      summary: List orders
-      responses:
-        '200': { description: Orders }
-    post:
-      operationId: createOrder
-      summary: Create an order
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                productId: { type: string }
-      responses:
-        '201': { description: Created }
-        '400': { description: Invalid request }`;
+const SAMPLE = `{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Demo Orders API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/orders": {
+      "get": {
+        "summary": "List orders",
+        "responses": {
+          "200": { "description": "Orders" }
+        }
+      },
+      "post": {
+        "operationId": "createOrder",
+        "summary": "Create an order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "productId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Invalid request" }
+        }
+      }
+    }
+  }
+}`;
 
 const copy = {
   "zh-TW": { title: "分析 API 規格", description: "貼上 OpenAPI JSON 或 YAML，取得前端串接所需的契約、缺漏與檢查清單。", source: "OpenAPI 文件", run: "開始分析", running: "分析中…", replay: "Replay", live: "Live AI", endpoints: "Endpoints", findings: "契約缺漏", questions: "待確認問題", checklist: "前端串接清單", approve: "核准報告", reject: "拒絕", back: "Task Investigator", waiting: "等待人工核准", tokens: "Tokens" },
