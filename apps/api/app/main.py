@@ -9,8 +9,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .database import Base, engine, get_db
-from .models import AuditLog, Investigation, InvestigationStatus
-from .schemas import ApprovalRequest, InvestigationCreate, InvestigationRead, RejectionRequest
+from .api_analysis_workflow import run_api_analysis
+from .models import ApiAnalysis, AuditLog, Investigation, InvestigationStatus
+from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, InvestigationCreate, InvestigationRead, RejectionRequest
 from .workflow import run_investigation, seed_steps
 
 
@@ -56,6 +57,71 @@ def enforce_live_limits(db: Session, requester_ip: str, repository: str) -> None
 @app.get("/health")
 def health():
     return {"status": "ok", "service": settings.app_name}
+
+
+def query_api_analysis(db: Session, analysis_id: str) -> ApiAnalysis:
+    item = db.get(ApiAnalysis, analysis_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="API analysis not found")
+    return item
+
+
+@app.post("/api/v1/api-analyses", response_model=ApiAnalysisRead, status_code=202)
+def create_api_analysis(payload: ApiAnalysisCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    item = ApiAnalysis(**payload.model_dump())
+    db.add(item)
+    db.commit()
+    background_tasks.add_task(run_api_analysis, item.id)
+    return query_api_analysis(db, item.id)
+
+
+@app.get("/api/v1/api-analyses/{analysis_id}", response_model=ApiAnalysisRead)
+def get_api_analysis(analysis_id: str, db: Session = Depends(get_db)):
+    return query_api_analysis(db, analysis_id)
+
+
+@app.get("/api/v1/api-analyses/{analysis_id}/events")
+async def api_analysis_events(analysis_id: str):
+    async def stream():
+        previous = None
+        while True:
+            from .database import SessionLocal
+            with SessionLocal() as db:
+                try:
+                    payload = ApiAnalysisRead.model_validate(query_api_analysis(db, analysis_id)).model_dump(mode="json")
+                except HTTPException:
+                    yield "event: error\ndata: {\"detail\":\"API analysis not found\"}\n\n"
+                    return
+            encoded = json.dumps(payload)
+            if encoded != previous:
+                yield f"event: analysis\ndata: {encoded}\n\n"
+                previous = encoded
+            if payload["status"] in {"waiting_approval", "approved", "rejected", "failed"}:
+                yield "event: done\ndata: {}\n\n"
+                return
+            await asyncio.sleep(0.5)
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.post("/api/v1/api-analyses/{analysis_id}/approve", response_model=ApiAnalysisRead)
+def approve_api_analysis(analysis_id: str, payload: ApiAnalysisApproval, db: Session = Depends(get_db)):
+    item = query_api_analysis(db, analysis_id)
+    if item.status != InvestigationStatus.waiting_approval:
+        raise HTTPException(status_code=409, detail="Only a waiting draft can be approved")
+    item.approved_report = payload.report.model_dump(mode="json") if payload.report else item.report
+    item.status = InvestigationStatus.approved
+    db.commit()
+    return item
+
+
+@app.post("/api/v1/api-analyses/{analysis_id}/reject", response_model=ApiAnalysisRead)
+def reject_api_analysis(analysis_id: str, payload: RejectionRequest, db: Session = Depends(get_db)):
+    item = query_api_analysis(db, analysis_id)
+    if item.status != InvestigationStatus.waiting_approval:
+        raise HTTPException(status_code=409, detail="Only a waiting draft can be rejected")
+    item.status = InvestigationStatus.rejected
+    db.commit()
+    return item
 
 
 @app.post("/api/v1/investigations", response_model=InvestigationRead, status_code=202)

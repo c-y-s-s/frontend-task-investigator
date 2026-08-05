@@ -20,6 +20,7 @@ GitHub Issue → Plan → Code search → File inspection → PR/CI context
 - **Grounding:** impacted files, tasks, and risks require source citations; unsupported claims are labelled inference.
 - **Human control:** approval and rejection are stored locally. Version 0.1 never writes to GitHub.
 - **Observable execution:** SSE streams workflow state, summaries, tool latency, token usage, and failure status.
+- **API Analyzer:** pasted OpenAPI 3.x JSON/YAML is converted into endpoint summaries, contract gaps, clarification questions, and a frontend integration checklist.
 
 ## Architecture
 
@@ -210,7 +211,18 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 | GET | `/api/v1/investigations/{id}/events` | Streams state changes with SSE |
 | POST | `/api/v1/investigations/{id}/approve` | Stores approved report and audit event |
 | POST | `/api/v1/investigations/{id}/reject` | Stores rejection reason and audit event |
+| POST | `/api/v1/api-analyses` | Starts Replay or Live OpenAPI analysis |
+| GET | `/api/v1/api-analyses/{id}` | Returns API analysis state and report |
+| GET | `/api/v1/api-analyses/{id}/events` | Streams API analysis state with SSE |
+| POST | `/api/v1/api-analyses/{id}/approve` | Approves an API analysis report |
+| POST | `/api/v1/api-analyses/{id}/reject` | Rejects an API analysis report |
 | GET | `/health` | Deployment health check |
+
+## API Analyzer
+
+Open `http://localhost:3000/api-analyzer`, paste an OpenAPI 3.x JSON or YAML document, and choose Replay or Live AI. Replay performs deterministic contract checks without OpenAI; Live uses the same bounded parser output as evidence for a structured AI report.
+
+The interview MVP intentionally supports pasted documents and local `#/components/...` references only. It rejects external `$ref` URLs, caps input at 500 KB, never fetches arbitrary URLs, and clears the source document from persistence after analysis. It analyzes contracts but does not generate API clients, Zod schemas, mocks, or MSW handlers.
 
 ## Safety and cost controls
 
@@ -220,6 +232,7 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 - Secrets, build output, binaries, lockfiles, and suspicious paths are excluded.
 - Live runs have per-IP hourly and global daily limits.
 - Model output is schema-validated before persistence.
+- OpenAPI input is limited to version 3.x, 500 KB, and local component references.
 - The model receives no GitHub token and cannot construct arbitrary HTTP requests.
 - Hidden chain-of-thought is never stored or exposed.
 
@@ -276,3 +289,5 @@ Task Investigator 是一個面試作品用的前端工程 Agent。輸入 GitHub 
 面試時請強調：這不是單次 Prompt，而是具備工具邊界、狀態管理、來源引用、結構化輸出、人工核准、Audit Log、錯誤處理與評估設計的完整 Agent Workflow。
 
 面試 Demo 建議先使用 Replay Mode 走完 3–5 分鐘流程，再展示已保存的 Live 結果。評估只使用付款重試與購物車持久化兩張 Issue，目的是證明 Agent 能處理不同類型的前端任務，而不是宣稱已達正式產品等級。
+
+第二個模組 API Analyzer 位於 `/api-analyzer`。使用者貼上 OpenAPI 3.x JSON／YAML 後，系統會整理 Endpoint、Request／Response、Authentication，並找出缺少的錯誤回應、Pagination、`operationId` 與前端整合資訊。MVP 不抓取外部 URL、不解析遠端 `$ref`，也不產生 Client 程式碼。

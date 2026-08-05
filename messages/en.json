@@ -1,7 +1,7 @@
 {
   "App": {
     "metaTitle": "Task Investigator — Evidence-backed engineering plans",
-    "navigation": {"aria": "Primary navigation", "workspace": "Workspace", "architecture": "Architecture", "home": "Task Investigator home"},
+    "navigation": {"aria": "Primary navigation", "workspace": "Workspace", "architecture": "Architecture", "home": "Task Investigator home", "apiAnalyzer": "API Analyzer"},
     "language": {"label": "Language", "zh": "中文", "en": "EN"},
     "workspace": {"local": "Local", "kicker": "Workspace", "title": "Investigate a GitHub task", "description": "Enter an issue to map code impact and generate an implementation plan."},
     "hero": {

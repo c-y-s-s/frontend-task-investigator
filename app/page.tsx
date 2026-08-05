@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
+import Link from "next/link";
 import zhTW from "@/messages/zh-TW.json";
 import en from "@/messages/en.json";
 import replayReportZhTW from "@/messages/replay-report.zh-TW.json";
@@ -156,7 +157,7 @@ function TaskInvestigator({ locale, onLocaleChange }: { locale: Locale; onLocale
     <main>
       <header className="topbar">
         <a className="brand" href="#workspace" aria-label={t("navigation.home")}><span className="brand-mark"><Icon name="spark" /></span><span>Task Investigator</span></a>
-        <div className="topbar-actions"><span className="environment-status"><i /> {t("workspace.local")}</span><div className="locale-switcher" role="group" aria-label={t("language.label")}><button className={locale === "zh-TW" ? "active" : ""} onClick={() => onLocaleChange("zh-TW")} aria-pressed={locale === "zh-TW"}>{t("language.zh")}</button><button className={locale === "en" ? "active" : ""} onClick={() => onLocaleChange("en")} aria-pressed={locale === "en"}>{t("language.en")}</button></div></div>
+        <div className="topbar-actions"><Link className="module-link" href="/api-analyzer">{t("navigation.apiAnalyzer")}</Link><span className="environment-status"><i /> {t("workspace.local")}</span><div className="locale-switcher" role="group" aria-label={t("language.label")}><button className={locale === "zh-TW" ? "active" : ""} onClick={() => onLocaleChange("zh-TW")} aria-pressed={locale === "zh-TW"}>{t("language.zh")}</button><button className={locale === "en" ? "active" : ""} onClick={() => onLocaleChange("en")} aria-pressed={locale === "en"}>{t("language.en")}</button></div></div>
       </header>
 
       <section className="workspace" id="workspace">

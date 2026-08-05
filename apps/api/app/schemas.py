@@ -138,3 +138,57 @@ class InvestigationRead(BaseModel):
     updated_at: datetime
     steps: list[WorkflowStepRead]
     tool_calls: list[ToolCallRead]
+
+
+class ApiAnalysisCreate(BaseModel):
+    document: str = Field(min_length=20, max_length=500_000)
+    mode: Literal["replay", "live"] = "replay"
+    locale: Literal["zh-TW", "en"] = "zh-TW"
+
+
+class ApiEndpoint(BaseModel):
+    method: str
+    path: str
+    summary: str
+    operation_id: str | None = None
+    authentication: list[str]
+    request_fields: list[str]
+    responses: list[str]
+
+
+class ApiFinding(BaseModel):
+    category: Literal["error", "pagination", "authentication", "schema", "frontend"]
+    severity: Literal["low", "medium", "high"]
+    title: str
+    explanation: str
+    location: str
+
+
+class ApiAnalysisReport(BaseModel):
+    api_title: str
+    api_version: str
+    summary: str
+    endpoints: list[ApiEndpoint]
+    findings: list[ApiFinding]
+    clarification_questions: list[str]
+    frontend_checklist: list[str]
+    confidence: Confidence
+
+
+class ApiAnalysisRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    mode: str
+    locale: str
+    status: str
+    report: ApiAnalysisReport | None
+    approved_report: ApiAnalysisReport | None
+    error: str | None
+    token_usage: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class ApiAnalysisApproval(BaseModel):
+    report: ApiAnalysisReport | None = None
+    actor: str = Field(default="demo-user", max_length=120)

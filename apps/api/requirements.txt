@@ -8,4 +8,4 @@ httpx==0.28.1
 openai==1.107.0
 pytest==8.4.2
 pytest-asyncio==1.1.0
-
+PyYAML==6.0.2
