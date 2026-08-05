@@ -138,3 +138,197 @@ class InvestigationRead(BaseModel):
     updated_at: datetime
     steps: list[WorkflowStepRead]
     tool_calls: list[ToolCallRead]
+
+
+class ApiAnalysisCreate(BaseModel):
+    document: str = Field(min_length=20, max_length=500_000)
+    input_type: Literal["response", "openapi"] = "response"
+    purpose: str = Field(default="", max_length=500)
+    known_contract: str = Field(default="", max_length=2_000)
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] | None = None
+    path: str | None = Field(default=None, max_length=300)
+    mode: Literal["replay", "live"] = "replay"
+    locale: Literal["zh-TW", "en"] = "zh-TW"
+
+
+class ApiEndpoint(BaseModel):
+    method: str
+    path: str
+    summary: str
+    operation_id: str | None = None
+    authentication: list[str]
+    request_fields: list[str]
+    responses: list[str]
+
+
+class ApiFinding(BaseModel):
+    category: Literal["error", "pagination", "authentication", "schema", "frontend"]
+    severity: Literal["low", "medium", "high"]
+    title: str
+    explanation: str
+    location: str
+
+
+class ResponseField(BaseModel):
+    path: str
+    inferred_type: str
+    nullable: bool
+
+
+class ApiAnalysisReport(BaseModel):
+    analysis_type: Literal["response", "openapi"]
+    api_title: str
+    api_version: str
+    summary: str
+    endpoints: list[ApiEndpoint]
+    findings: list[ApiFinding]
+    clarification_questions: list[str]
+    frontend_checklist: list[str]
+    response_fields: list[ResponseField]
+    typescript_draft: str
+    privacy_warnings: list[str]
+    contract_notes_used: list[str]
+    confidence: Confidence
+
+
+class ApiAnalysisRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    input_type: str
+    purpose: str
+    method: str | None
+    path: str | None
+    mode: str
+    locale: str
+    status: str
+    report: ApiAnalysisReport | None
+    approved_report: ApiAnalysisReport | None
+    error: str | None
+    token_usage: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class ApiAnalysisApproval(BaseModel):
+    report: ApiAnalysisReport | None = None
+    actor: str = Field(default="demo-user", max_length=120)
+
+
+class BugInvestigationCreate(BaseModel):
+    title: str = Field(min_length=5, max_length=300)
+    repository: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    branch: str = Field(default="main", min_length=1, max_length=120)
+    error_message: str = Field(min_length=5, max_length=5_000)
+    console_log: str = Field(default="", max_length=20_000)
+    network_context: str = Field(default="", max_length=20_000)
+    expected_behavior: str = Field(default="", max_length=2_000)
+    mode: Literal["replay", "live"] = "replay"
+    locale: Literal["zh-TW", "en"] = "zh-TW"
+
+
+class BugEvidence(BaseModel):
+    source: Literal["input", "file", "pull_request"]
+    observation: str
+    citation: Citation | None = None
+
+
+class BugHypothesis(BaseModel):
+    rank: int = Field(ge=1, le=3)
+    title: str
+    explanation: str
+    confidence: Literal["low", "medium", "high"]
+    evidence: list[BugEvidence] = Field(min_length=1)
+
+
+class VerificationAction(BaseModel):
+    order: int = Field(ge=1, le=6)
+    action: str
+    expected_signal: str
+    related_hypothesis_rank: int = Field(ge=1, le=3)
+
+
+class BugInvestigationReport(BaseModel):
+    bug_summary: str
+    observed_facts: list[str]
+    hypotheses: list[BugHypothesis] = Field(min_length=1, max_length=3)
+    verification_actions: list[VerificationAction] = Field(min_length=1, max_length=6)
+    missing_information: list[str]
+    affected_files: list[ImpactedFile]
+    stop_condition: str
+    confidence: Confidence
+
+
+class BugInvestigationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    title: str
+    repository: str
+    branch: str
+    mode: str
+    locale: str
+    status: str
+    steps: list[dict]
+    tool_calls: list[dict]
+    report: BugInvestigationReport | None
+    approved_report: BugInvestigationReport | None
+    rejection_reason: str | None
+    error: str | None
+    token_usage: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class BugInvestigationApproval(BaseModel):
+    report: BugInvestigationReport | None = None
+    actor: str = Field(default="demo-user", max_length=120)
+
+
+class CodeReviewCreate(BaseModel):
+    repository: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    pull_request_number: int = Field(gt=0)
+    mode: Literal["replay", "live"] = "replay"
+    locale: Literal["zh-TW", "en"] = "zh-TW"
+
+
+class ReviewFinding(BaseModel):
+    severity: Literal["blocking", "warning", "suggestion"]
+    title: str
+    explanation: str
+    file_path: str
+    line_hint: str
+    verification: str
+    citations: list[Citation] = Field(min_length=1)
+
+
+class CodeReviewReport(BaseModel):
+    pull_request_summary: str
+    verdict: Literal["request_changes", "comment", "approve"]
+    findings: list[ReviewFinding]
+    positive_notes: list[str]
+    missing_context: list[str]
+    reviewed_files: list[str]
+    confidence: Confidence
+
+
+class CodeReviewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    repository: str
+    pull_request_number: int
+    mode: str
+    locale: str
+    status: str
+    steps: list[dict]
+    tool_calls: list[dict]
+    report: CodeReviewReport | None
+    approved_report: CodeReviewReport | None
+    rejection_reason: str | None
+    error: str | None
+    token_usage: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class CodeReviewApproval(BaseModel):
+    report: CodeReviewReport | None = None
+    actor: str = Field(default="demo-user", max_length=120)

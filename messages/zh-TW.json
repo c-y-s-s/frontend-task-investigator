@@ -1,7 +1,7 @@
 {
   "App": {
     "metaTitle": "Task Investigator｜具備來源依據的工程規劃",
-    "navigation": {"aria": "主要導覽", "workspace": "工作區", "architecture": "系統架構", "home": "Task Investigator 首頁"},
+    "navigation": {"aria": "主要導覽", "workspace": "工作區", "architecture": "系統架構", "home": "Task Investigator 首頁", "apiAnalyzer": "API Analyzer"},
     "language": {"label": "語言", "zh": "中文", "en": "EN"},
     "workspace": {"local": "本機環境", "kicker": "工作區", "title": "調查 GitHub 任務", "description": "輸入 Issue，取得程式碼影響範圍與實作建議。"},
     "hero": {

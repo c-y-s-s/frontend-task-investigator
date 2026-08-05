@@ -1,6 +1,6 @@
 import pytest
 from types import SimpleNamespace
-from app.ai import OpenAIAnalyzer, validate_required_evidence
+from app.ai import OpenAIAnalyzer, build_instructions, validate_required_evidence
 from app.replay import REPLAY_REPORT
 from app.schemas import InvestigationReport, SearchPlan
 
@@ -39,3 +39,12 @@ def test_search_planning_returns_structured_terms_and_usage():
     plan, tokens = analyzer.plan_search({"number": 1, "title": "Retry payment", "body": ""})
     assert plan.search_terms == ["payment", "retryable", "idempotency"]
     assert tokens == 321
+
+
+def test_zh_tw_prompt_requires_natural_taiwan_engineering_language():
+    instructions = build_instructions("zh-TW")
+
+    assert "Taiwanese software team" in instructions
+    assert "程式碼" in instructions
+    assert "字段" in instructions
+    assert "API, Response, Request" in instructions

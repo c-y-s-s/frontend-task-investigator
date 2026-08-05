@@ -156,6 +156,26 @@ class GitHubClient:
             "details_available": True,
         }
 
+    def get_pull_request_review_context(self, repository: str, number: int) -> dict:
+        """Return bounded PR metadata and patches for the dedicated review workflow."""
+        self._ensure_allowed(repository)
+        detail = self._get(f"/repos/{repository}/pulls/{number}")
+        files = self._get(f"/repos/{repository}/pulls/{number}/files", {"per_page": 10})
+        reviewed = []
+        total_patch_chars = 0
+        for item in files[:10] if isinstance(files, list) else []:
+            path = item.get("filename", "")
+            if not self._safe_path(path):
+                continue
+            patch = (item.get("patch") or "")[:8000]
+            remaining = max(0, 40000 - total_patch_chars)
+            patch = patch[:remaining]
+            total_patch_chars += len(patch)
+            reviewed.append({"path": path, "status": item.get("status", "modified"), "additions": item.get("additions", 0), "deletions": item.get("deletions", 0), "patch": patch, "url": item.get("blob_url") or detail["html_url"]})
+            if total_patch_chars >= 40000:
+                break
+        return {"number": number, "title": detail["title"], "body": (detail.get("body") or "")[:4000], "url": detail["html_url"], "state": detail["state"], "merged": bool(detail.get("merged_at")), "base_branch": detail["base"]["ref"], "head_branch": detail["head"]["ref"], "files": reviewed, "limits": {"max_files": 10, "max_patch_chars": 40000}}
+
     def get_workflow_runs(self, repository: str, branch: str) -> list[dict]:
         self._ensure_allowed(repository)
         data = self._get(f"/repos/{repository}/actions/runs", {"branch": branch, "per_page": 5})

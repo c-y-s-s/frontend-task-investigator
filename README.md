@@ -20,6 +20,9 @@ GitHub Issue → Plan → Code search → File inspection → PR/CI context
 - **Grounding:** impacted files, tasks, and risks require source citations; unsupported claims are labelled inference.
 - **Human control:** approval and rejection are stored locally. Version 0.1 never writes to GitHub.
 - **Observable execution:** SSE streams workflow state, summaries, tool latency, token usage, and failure status.
+- **API Analyzer:** pasted OpenAPI 3.x JSON/YAML is converted into endpoint summaries, contract gaps, clarification questions, and a frontend integration checklist.
+- **Bug Investigator:** error, Console, and Network evidence is matched with read-only repository context to produce ranked hypotheses and verification actions—not an unverified fix.
+- **Code Review Agent:** one allowlisted GitHub PR is reviewed through bounded patches, evidence-backed severity, and a human acceptance checkpoint without posting back to GitHub.
 
 ## Architecture
 
@@ -210,7 +213,44 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 | GET | `/api/v1/investigations/{id}/events` | Streams state changes with SSE |
 | POST | `/api/v1/investigations/{id}/approve` | Stores approved report and audit event |
 | POST | `/api/v1/investigations/{id}/reject` | Stores rejection reason and audit event |
+| POST | `/api/v1/api-analyses` | Starts Replay or Live Response JSON / OpenAPI analysis |
+| GET | `/api/v1/api-analyses/{id}` | Returns API analysis state and report |
+| GET | `/api/v1/api-analyses/{id}/events` | Streams API analysis state with SSE |
+| POST | `/api/v1/api-analyses/{id}/approve` | Approves an API analysis report |
+| POST | `/api/v1/api-analyses/{id}/reject` | Rejects an API analysis report |
+| POST | `/api/v1/bug-investigations` | Starts Replay or Live bug investigation |
+| GET | `/api/v1/bug-investigations/{id}` | Returns bug investigation state and report |
+| GET | `/api/v1/bug-investigations/{id}/events` | Streams bug investigation state with SSE |
+| POST | `/api/v1/bug-investigations/{id}/approve` | Approves an investigation direction |
+| POST | `/api/v1/bug-investigations/{id}/reject` | Rejects an investigation direction |
+| POST | `/api/v1/code-reviews` | Starts Replay or Live PR review |
+| GET | `/api/v1/code-reviews/{id}` | Returns PR review state and findings |
+| GET | `/api/v1/code-reviews/{id}/events` | Streams PR review state with SSE |
+| POST | `/api/v1/code-reviews/{id}/approve` | Accepts the generated review result |
+| POST | `/api/v1/code-reviews/{id}/reject` | Rejects the review and saves a reason |
 | GET | `/health` | Deployment health check |
+
+## API Analyzer
+
+Open `http://localhost:3000/api-analyzer`. The default Response JSON mode accepts one API response sample plus optional method, path, a short feature-purpose description, and **Known API contract / rules**. Use that last field for facts you already know, such as enum values, pagination query names and limits, nullable rules, authentication, date format, or the error-response shape. The Agent lists which user-provided rules it used and avoids asking questions those notes already answer.
+
+Known-contract notes are context, not evidence discovered from Swagger. Do not paste credentials or tokens. Common secret patterns are redacted before Live AI, and both the original response JSON and raw contract notes are cleared from persistence when the analysis finishes. The structured report retains only the sanitized rules it used.
+
+The prefilled contract is fictional Demo data that answers authentication, pagination errors, unsupported filtering, default sorting, and date formatting. Replace it before analyzing a real endpoint; its values must not be treated as facts about another backend.
+
+The analyzer infers field types and nullability, detects pagination and personal-data fields, produces a TypeScript draft, and separates direct observations from facts that still require backend confirmation. If the report still has questions, ask the backend engineer or PM, add the answers to Known API contract, and run it again.
+
+Switch to OpenAPI Document mode to paste an OpenAPI 3.x JSON or YAML document. Replay performs deterministic checks without OpenAI; Live uses the same bounded and sanitized parser output as evidence for a structured AI report.
+
+The interview MVP intentionally accepts pasted input only. It rejects external `$ref` URLs, caps input at 500 KB, never fetches arbitrary URLs, redacts common personal-data values before Live AI analysis, and clears the source document from persistence after analysis. Generated TypeScript is a draft inferred from observed values, not a formal contract.
+
+## Bug Investigator
+
+Open `http://localhost:3000/bug-investigator`. The default quick workflow asks only for a repository and one free-form problem box; users can mix the description, expected behavior, Error, Console, and Network Response without classifying them first. Separate structured fields remain available under Advanced details. Replay demonstrates a fixed payment 503 case; Live searches only the allowlisted GitHub repository, reads bounded candidate files, checks up to three related PRs, and asks OpenAI for only the hypotheses supported by evidence, capped at three.
+
+The output intentionally says **possible cause**, not confirmed root cause. Each hypothesis includes evidence and small verification actions with expected signals. The workflow stops at human approval and never edits code, executes arbitrary commands, controls a browser, or creates a pull request. Common tokens and email values are redacted before Live AI, and raw Error/Console/Network input is cleared after the workflow.
+
+The Bug workspace defaults to Traditional Chinese and can switch to English. The first result view shows only the top cause, next verification, and confidence; complete evidence, other hypotheses, affected files, workflow progress, and tool calls are collapsed on demand. The human rejection reason is persisted with the investigation.
 
 ## Safety and cost controls
 
@@ -220,6 +260,7 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 - Secrets, build output, binaries, lockfiles, and suspicious paths are excluded.
 - Live runs have per-IP hourly and global daily limits.
 - Model output is schema-validated before persistence.
+- OpenAPI input is limited to version 3.x, 500 KB, and local component references.
 - The model receives no GitHub token and cannot construct arbitrary HTTP requests.
 - Hidden chain-of-thought is never stored or exposed.
 
@@ -246,6 +287,8 @@ Use Replay mode for the reliable 3–5 minute walkthrough:
 3. Explain that GitHub tools are read-only and capped; the model never receives the GitHub token or a general HTTP tool.
 4. Approve the report to demonstrate the human checkpoint and audit state.
 5. Show one saved Live result to compare real latency and token usage without risking an interview-time API failure.
+
+For the API Analyzer walkthrough, use the dedicated [Traditional Chinese demo script](docs/api-analyzer-demo.zh-TW.md). It demonstrates the same Response twice—first without known contract notes, then with confirmed rules—so the reviewer can see which questions disappear and why. The expected behavior is recorded in `evals/api-analyzer-response-case.json`.
 
 ## Evaluation
 
@@ -276,3 +319,5 @@ Task Investigator 是一個面試作品用的前端工程 Agent。輸入 GitHub 
 面試時請強調：這不是單次 Prompt，而是具備工具邊界、狀態管理、來源引用、結構化輸出、人工核准、Audit Log、錯誤處理與評估設計的完整 Agent Workflow。
 
 面試 Demo 建議先使用 Replay Mode 走完 3–5 分鐘流程，再展示已保存的 Live 結果。評估只使用付款重試與購物車持久化兩張 Issue，目的是證明 Agent 能處理不同類型的前端任務，而不是宣稱已達正式產品等級。
+
+第二個模組 API Analyzer 位於 `/api-analyzer`。預設模式讓使用者貼上單支 API 的 Response JSON，並可補充功能用途、Method 與 Path；系統會整理欄位型別、null、分頁、個資風險、TypeScript 草稿與待確認問題。也可切換成 OpenAPI 3.x 文件模式，分析 Endpoint、Request／Response、Authentication 與契約缺漏。MVP 不抓取外部 URL、不解析遠端 `$ref`，也不宣稱單一 Response 範例就是正式契約。

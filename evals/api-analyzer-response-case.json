@@ -1,0 +1,24 @@
+{
+  "name": "paginated application list",
+  "purpose": "在管理後台顯示申請列表，支援分頁與狀態查看。",
+  "method": "GET",
+  "path": "/applications",
+  "expected_observations": [
+    "data is an array",
+    "company is nullable",
+    "meta contains pagination fields",
+    "name and email are personal-data fields"
+  ],
+  "facts_that_must_not_be_inferred_without_contract": [
+    "complete enum values",
+    "authentication and authorization behavior",
+    "invalid pagination error response",
+    "filter and search support",
+    "guaranteed date-time format"
+  ],
+  "expected_after_known_contract": [
+    "the report lists the supplied contract notes",
+    "questions already answered by the notes are omitted",
+    "supplied notes are not described as OpenAPI evidence"
+  ]
+}
