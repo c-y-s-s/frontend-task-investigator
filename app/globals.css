@@ -245,3 +245,28 @@ footer { border-top:1px solid var(--line); padding:22px max(24px,5vw); display:f
 .api-heading-badge,.api-guide>span,.api-privacy-note strong { font-size:10px; }.api-context input,.api-context select { font-size:13px; }.api-form .known-contract-field textarea,.contract-notes pre { font-size:12px; }.api-guide>span { color:#b8c3bd; }.api-guide li b { font-size:10px; }.api-guide li p { color:#d0d8d3; font-size:12px; line-height:1.55; }.api-privacy-note p { color:#c6d0ca; font-size:11px; }.endpoint-list p,.endpoint-list small { font-size:12px; }.question-heading button { font-size:10px; }.question-help { color:#52615a; font-size:11px; }.response-field-list span { font-size:11px; }.type-draft { font-size:12px; }.api-status { font-size:12px; }
 .bug-quick-form input,.bug-quick-form textarea { font-size:13px; }.bug-incident small { color:#52615a; font-size:11px; }.bug-advanced>summary,.bug-detail-panel>summary { color:#3f4f47; font-size:12px; }.bug-quick-action p { color:#52615a; font-size:11px; }.bug-result-status { color:#46554e; font-size:10px; }.bug-answer-grid article>span { color:#52615a; font-size:10px; }.bug-answer-grid h3 { font-size:16px; }.bug-answer-grid p { color:#405048; font-size:13px; }.bug-confidence-card strong { font-size:20px; }.hypothesis-list header span,.hypothesis-list li span { font-size:9px; }.hypothesis-list>article>p { color:#405048; font-size:13px; }.hypothesis-list ul { color:#52615a; font-size:11px; line-height:1.55; }.bug-file-list code { font-size:11px; }.bug-file-list span { font-size:9px; }.bug-file-list p,.bug-file-list a { color:#46564e; font-size:11px; }.stop-condition strong { font-size:12px; }.stop-condition p { color:#594e36; font-size:12px; }.bug-trace-grid strong { font-size:11px; }.bug-trace-grid p { color:#52615a; font-size:10px; line-height:1.45; }.bug-trace-grid small { font-size:9px; }.bug-inline-tools>span { font-size:9px; }.bug-inline-tools code { color:#30483c; font-size:10px; }
 @media(max-width:600px) { .module-link { font-size:11px; }.topbar-actions { gap:9px; }.workspace-heading p { font-size:13px; }.bug-answer-grid p { font-size:12px; } }
+
+/* Accessibility floor: no informational text below 12px. */
+.module-link,.environment-status,.locale-switcher button,.build-badge,
+.hero-kicker,.eyebrow,.panel-kicker,.report-label,.hero-flow span,
+.workspace-heading>div:first-child>span,.workflow-preview,.section-number,
+.investigation-form label>span,.mode-picker button,.timeline-step p,.timeline-step small,
+.run-meta span,.run-meta strong,.report-tabs button,.status-pill,.confidence,.report-section-title,
+.report-section-title b,.evidence-list article>div:first-child span,.evidence-list small,
+code,.risk-tag,.citation,.task-number,.task-list ul,.evidence-tag,
+.approval-bar span,.approval-bar strong,.approve-button,.reject-button,.tool-table span,footer,
+.api-heading-badge,.api-input-type button,.api-context span,.api-form>label>span,
+.api-form .known-contract-field textarea,.api-guide>span,.api-guide li b,.api-guide li p,
+.api-privacy-note strong,.api-privacy-note p,.api-status,.endpoint-list p,.endpoint-list small,
+.question-heading button,.question-help,.contract-notes pre,.response-field-list span,.type-draft,
+.bug-scope span,.bug-scope b,.bug-form label span,.bug-submit p,.bug-timeline>div,
+.bug-timeline strong,.bug-timeline p,.bug-timeline small,.bug-tools>span,.bug-tools code,
+.bug-report-meta,.hypothesis-list header span,.hypothesis-list ul,.hypothesis-list li span,
+.bug-file-list code,.bug-file-list span,.bug-file-list p,.bug-file-list a,
+.verification-list article>b,.verification-list p,.stop-condition strong,.stop-condition p,
+.reject-reason input,.rejection-note strong,.rejection-note p,
+.bug-quick-form label>span,.bug-advanced label>span,.bug-incident small,
+.bug-advanced>summary,.bug-detail-panel>summary,.bug-quick-action p,.bug-result-status,
+.bug-answer-grid article>span,.bug-answer-grid p,.bug-detail-panel>summary span,
+.bug-trace-grid strong,.bug-trace-grid p,.bug-trace-grid small,
+.bug-inline-tools>span,.bug-inline-tools code { font-size:12px!important; }
