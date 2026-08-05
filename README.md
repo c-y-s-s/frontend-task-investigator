@@ -240,11 +240,11 @@ The interview MVP intentionally accepts pasted input only. It rejects external `
 
 ## Bug Investigator
 
-Open `http://localhost:3000/bug-investigator`. Supply a bug title, expected behavior, Error message, Console log, and Network Response. Replay demonstrates a fixed payment 503 case; Live searches only the allowlisted GitHub repository, reads bounded candidate files, checks up to three related PRs, and asks OpenAI for at most three ranked hypotheses.
+Open `http://localhost:3000/bug-investigator`. The default quick workflow asks only for a repository and one free-form problem box; users can mix the description, expected behavior, Error, Console, and Network Response without classifying them first. Separate structured fields remain available under Advanced details. Replay demonstrates a fixed payment 503 case; Live searches only the allowlisted GitHub repository, reads bounded candidate files, checks up to three related PRs, and asks OpenAI for only the hypotheses supported by evidence, capped at three.
 
 The output intentionally says **possible cause**, not confirmed root cause. Each hypothesis includes evidence and small verification actions with expected signals. The workflow stops at human approval and never edits code, executes arbitrary commands, controls a browser, or creates a pull request. Common tokens and email values are redacted before Live AI, and raw Error/Console/Network input is cleared after the workflow.
 
-The Bug workspace defaults to Traditional Chinese and can switch to English. Its left trace shows both workflow progress and bounded tool calls; the report exposes affected-file citations, status, token usage, and the persisted human reason when a reviewer rejects an investigation direction.
+The Bug workspace defaults to Traditional Chinese and can switch to English. The first result view shows only the top cause, next verification, and confidence; complete evidence, other hypotheses, affected files, workflow progress, and tool calls are collapsed on demand. The human rejection reason is persisted with the investigation.
 
 ## Safety and cost controls
 
