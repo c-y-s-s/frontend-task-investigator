@@ -98,6 +98,10 @@ class ApiAnalysis(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     document: Mapped[str] = mapped_column(Text)
+    input_type: Mapped[str] = mapped_column(String(20), default="response")
+    purpose: Mapped[str] = mapped_column(String(500), default="")
+    method: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    path: Mapped[str | None] = mapped_column(String(300), nullable=True)
     mode: Mapped[str] = mapped_column(String(20), default="replay")
     locale: Mapped[str] = mapped_column(String(10), default="zh-TW")
     status: Mapped[InvestigationStatus] = mapped_column(Enum(InvestigationStatus), default=InvestigationStatus.queued, index=True)

@@ -1,4 +1,4 @@
-from .api_analyzer import analyze_with_openai, parse_openapi_document, replay_report, summarize_openapi
+from .api_analyzer import analyze_with_openai, parse_openapi_document, replay_report, replay_response_report, summarize_openapi, summarize_response_json
 from .config import get_settings
 from .database import SessionLocal
 from .models import ApiAnalysis, InvestigationStatus
@@ -13,11 +13,14 @@ def run_api_analysis(analysis_id: str) -> None:
     try:
         item.status = InvestigationStatus.fetching_context
         db.commit()
-        summary = summarize_openapi(parse_openapi_document(item.document))
+        if item.input_type == "response":
+            summary = summarize_response_json(item.document, item.purpose, item.method, item.path)
+        else:
+            summary = summarize_openapi(parse_openapi_document(item.document))
         item.status = InvestigationStatus.analyzing
         db.commit()
         if item.mode == "replay":
-            report = replay_report(summary, item.locale)
+            report = replay_response_report(summary, item.locale) if item.input_type == "response" else replay_report(summary, item.locale)
             tokens = 0
         else:
             report, tokens = analyze_with_openai(summary, item.locale, get_settings())

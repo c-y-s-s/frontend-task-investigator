@@ -142,6 +142,10 @@ class InvestigationRead(BaseModel):
 
 class ApiAnalysisCreate(BaseModel):
     document: str = Field(min_length=20, max_length=500_000)
+    input_type: Literal["response", "openapi"] = "response"
+    purpose: str = Field(default="", max_length=500)
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] | None = None
+    path: str | None = Field(default=None, max_length=300)
     mode: Literal["replay", "live"] = "replay"
     locale: Literal["zh-TW", "en"] = "zh-TW"
 
@@ -164,7 +168,14 @@ class ApiFinding(BaseModel):
     location: str
 
 
+class ResponseField(BaseModel):
+    path: str
+    inferred_type: str
+    nullable: bool
+
+
 class ApiAnalysisReport(BaseModel):
+    analysis_type: Literal["response", "openapi"]
     api_title: str
     api_version: str
     summary: str
@@ -172,12 +183,19 @@ class ApiAnalysisReport(BaseModel):
     findings: list[ApiFinding]
     clarification_questions: list[str]
     frontend_checklist: list[str]
+    response_fields: list[ResponseField]
+    typescript_draft: str
+    privacy_warnings: list[str]
     confidence: Confidence
 
 
 class ApiAnalysisRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    input_type: str
+    purpose: str
+    method: str | None
+    path: str | None
     mode: str
     locale: str
     status: str

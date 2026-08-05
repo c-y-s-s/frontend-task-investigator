@@ -220,9 +220,11 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 
 ## API Analyzer
 
-Open `http://localhost:3000/api-analyzer`, paste an OpenAPI 3.x JSON or YAML document, and choose Replay or Live AI. Replay performs deterministic contract checks without OpenAI; Live uses the same bounded parser output as evidence for a structured AI report.
+Open `http://localhost:3000/api-analyzer`. The default Response JSON mode accepts one API response sample plus optional method, path, and a short feature-purpose description. It infers field types and nullability, detects pagination and personal-data fields, produces a TypeScript draft, and separates direct observations from facts that still require backend confirmation.
 
-The interview MVP intentionally supports pasted documents and local `#/components/...` references only. It rejects external `$ref` URLs, caps input at 500 KB, never fetches arbitrary URLs, and clears the source document from persistence after analysis. It analyzes contracts but does not generate API clients, Zod schemas, mocks, or MSW handlers.
+Switch to OpenAPI Document mode to paste an OpenAPI 3.x JSON or YAML document. Replay performs deterministic checks without OpenAI; Live uses the same bounded and sanitized parser output as evidence for a structured AI report.
+
+The interview MVP intentionally accepts pasted input only. It rejects external `$ref` URLs, caps input at 500 KB, never fetches arbitrary URLs, redacts common personal-data values before Live AI analysis, and clears the source document from persistence after analysis. Generated TypeScript is a draft inferred from observed values, not a formal contract.
 
 ## Safety and cost controls
 
@@ -290,4 +292,4 @@ Task Investigator 是一個面試作品用的前端工程 Agent。輸入 GitHub 
 
 面試 Demo 建議先使用 Replay Mode 走完 3–5 分鐘流程，再展示已保存的 Live 結果。評估只使用付款重試與購物車持久化兩張 Issue，目的是證明 Agent 能處理不同類型的前端任務，而不是宣稱已達正式產品等級。
 
-第二個模組 API Analyzer 位於 `/api-analyzer`。使用者貼上 OpenAPI 3.x JSON／YAML 後，系統會整理 Endpoint、Request／Response、Authentication，並找出缺少的錯誤回應、Pagination、`operationId` 與前端整合資訊。MVP 不抓取外部 URL、不解析遠端 `$ref`，也不產生 Client 程式碼。
+第二個模組 API Analyzer 位於 `/api-analyzer`。預設模式讓使用者貼上單支 API 的 Response JSON，並可補充功能用途、Method 與 Path；系統會整理欄位型別、null、分頁、個資風險、TypeScript 草稿與待確認問題。也可切換成 OpenAPI 3.x 文件模式，分析 Endpoint、Request／Response、Authentication 與契約缺漏。MVP 不抓取外部 URL、不解析遠端 `$ref`，也不宣稱單一 Response 範例就是正式契約。
