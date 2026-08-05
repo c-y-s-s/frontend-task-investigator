@@ -14,7 +14,7 @@ def run_api_analysis(analysis_id: str) -> None:
         item.status = InvestigationStatus.fetching_context
         db.commit()
         if item.input_type == "response":
-            summary = summarize_response_json(item.document, item.purpose, item.method, item.path)
+            summary = summarize_response_json(item.document, item.purpose, item.method, item.path, item.known_contract)
         else:
             summary = summarize_openapi(parse_openapi_document(item.document))
         item.status = InvestigationStatus.analyzing
@@ -34,5 +34,6 @@ def run_api_analysis(analysis_id: str) -> None:
         # The source contract is needed only while the background analysis runs.
         # Avoid retaining potentially sensitive examples or descriptions.
         item.document = ""
+        item.known_contract = ""
         db.commit()
         db.close()

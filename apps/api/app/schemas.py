@@ -144,6 +144,7 @@ class ApiAnalysisCreate(BaseModel):
     document: str = Field(min_length=20, max_length=500_000)
     input_type: Literal["response", "openapi"] = "response"
     purpose: str = Field(default="", max_length=500)
+    known_contract: str = Field(default="", max_length=2_000)
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] | None = None
     path: str | None = Field(default=None, max_length=300)
     mode: Literal["replay", "live"] = "replay"
@@ -186,6 +187,7 @@ class ApiAnalysisReport(BaseModel):
     response_fields: list[ResponseField]
     typescript_draft: str
     privacy_warnings: list[str]
+    contract_notes_used: list[str]
     confidence: Confidence
 
 

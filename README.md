@@ -211,7 +211,7 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 | GET | `/api/v1/investigations/{id}/events` | Streams state changes with SSE |
 | POST | `/api/v1/investigations/{id}/approve` | Stores approved report and audit event |
 | POST | `/api/v1/investigations/{id}/reject` | Stores rejection reason and audit event |
-| POST | `/api/v1/api-analyses` | Starts Replay or Live OpenAPI analysis |
+| POST | `/api/v1/api-analyses` | Starts Replay or Live Response JSON / OpenAPI analysis |
 | GET | `/api/v1/api-analyses/{id}` | Returns API analysis state and report |
 | GET | `/api/v1/api-analyses/{id}/events` | Streams API analysis state with SSE |
 | POST | `/api/v1/api-analyses/{id}/approve` | Approves an API analysis report |
@@ -220,7 +220,11 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 
 ## API Analyzer
 
-Open `http://localhost:3000/api-analyzer`. The default Response JSON mode accepts one API response sample plus optional method, path, and a short feature-purpose description. It infers field types and nullability, detects pagination and personal-data fields, produces a TypeScript draft, and separates direct observations from facts that still require backend confirmation.
+Open `http://localhost:3000/api-analyzer`. The default Response JSON mode accepts one API response sample plus optional method, path, a short feature-purpose description, and **Known API contract / rules**. Use that last field for facts you already know, such as enum values, pagination query names and limits, nullable rules, authentication, date format, or the error-response shape. The Agent lists which user-provided rules it used and avoids asking questions those notes already answer.
+
+Known-contract notes are context, not evidence discovered from Swagger. Do not paste credentials or tokens. Common secret patterns are redacted before Live AI, and both the original response JSON and raw contract notes are cleared from persistence when the analysis finishes. The structured report retains only the sanitized rules it used.
+
+The analyzer infers field types and nullability, detects pagination and personal-data fields, produces a TypeScript draft, and separates direct observations from facts that still require backend confirmation. If the report still has questions, ask the backend engineer or PM, add the answers to Known API contract, and run it again.
 
 Switch to OpenAPI Document mode to paste an OpenAPI 3.x JSON or YAML document. Replay performs deterministic checks without OpenAI; Live uses the same bounded and sanitized parser output as evidence for a structured AI report.
 

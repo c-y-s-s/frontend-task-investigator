@@ -156,6 +156,8 @@ footer { border-top:1px solid var(--line); padding:22px max(24px,5vw); display:f
 .api-context input,.api-context select { width:100%; border:0; outline:0; background:transparent; color:var(--ink); font:550 12px var(--font-geist-mono); }
 .api-form>label>span { display:flex; align-items:center; min-height:40px; padding:0 16px; border-bottom:1px solid var(--line); color:#66716b; background:#f9faf5; font:650 9px var(--font-geist-mono); letter-spacing:.1em; text-transform:uppercase; }
 .api-form textarea { width:100%; min-height:390px; resize:vertical; border:0; outline:0; padding:18px 20px; color:#dce7de; caret-color:var(--mint); background:#18231f; tab-size:2; font:12px/1.7 var(--font-geist-mono); }
+.api-form .known-contract-field textarea { min-height:112px; padding:14px 16px; border-bottom:1px solid var(--line); color:#294337; caret-color:var(--green); background:#f3f7ef; font:11px/1.6 var(--font-geist-mono); }
+.api-form .known-contract-field textarea::placeholder { color:#84918a; }
 .api-form-actions { min-height:58px; display:flex; justify-content:flex-end; border-top:1px solid var(--line); background:#fffefb; }
 .api-form-actions .run-button { min-width:150px; }
 .api-guide { min-height:100%; padding:24px 21px; border:1px solid #293630; border-radius:12px; background:#18231f; color:#edf2ed; display:flex; flex-direction:column; }
@@ -185,6 +187,9 @@ footer { border-top:1px solid var(--line); padding:22px max(24px,5vw); display:f
 .question-heading button { border:1px solid #cbd4c8; border-radius:6px; padding:5px 8px; background:#f8faf4; color:#355442; cursor:pointer; font:650 9px var(--font-geist-mono); }
 .question-heading button:hover { border-color:#829687; background:#edf3e9; }
 .question-help { min-height:34px; margin:-8px 0 10px; color:var(--muted); font-size:10px; line-height:1.5; }
+.contract-notes { margin:0 0 28px; padding:16px 18px; border:1px solid #cbd9ca; border-radius:8px; background:#f1f7ed; }
+.contract-notes h3 { margin:0 0 9px; color:#315b43; font-size:12px; }
+.contract-notes pre { margin:0; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; color:#385247; font:11px/1.6 var(--font-geist-mono); }
 .response-field-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
 .response-field-list>div { display:flex; justify-content:space-between; gap:12px; padding:10px 12px; border-bottom:1px solid var(--line); background:#fcfdfa; }
 .response-field-list span { color:var(--muted); font:550 10px var(--font-geist-mono); }

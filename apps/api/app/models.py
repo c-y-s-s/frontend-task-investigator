@@ -100,6 +100,7 @@ class ApiAnalysis(Base):
     document: Mapped[str] = mapped_column(Text)
     input_type: Mapped[str] = mapped_column(String(20), default="response")
     purpose: Mapped[str] = mapped_column(String(500), default="")
+    known_contract: Mapped[str] = mapped_column(Text, default="")
     method: Mapped[str | None] = mapped_column(String(10), nullable=True)
     path: Mapped[str | None] = mapped_column(String(300), nullable=True)
     mode: Mapped[str] = mapped_column(String(20), default="replay")

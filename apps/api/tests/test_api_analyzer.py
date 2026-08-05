@@ -3,6 +3,8 @@ import time
 import pytest
 
 from app.api_analyzer import OpenApiDocumentError, parse_openapi_document, summarize_openapi, summarize_response_json
+from app.database import SessionLocal
+from app.models import ApiAnalysis
 
 
 SPEC = """
@@ -85,6 +87,17 @@ def test_response_sample_infers_nullability_pagination_and_redacts_pii():
     assert "meta: PaginationMeta" in result["typescript_draft"]
 
 
+def test_known_contract_is_sanitized_before_ai_context():
+    result = summarize_response_json(
+        '{"status":"sent"}', "Status display", "GET", "/status",
+        "status: pending | sent | failed\nAuthorization: Bearer secret-token\napi_key=private-value",
+    )
+
+    assert "pending | sent | failed" in result["known_contract"]
+    assert "secret-token" not in result["known_contract"]
+    assert "private-value" not in result["known_contract"]
+
+
 def test_response_sample_is_the_default_api_analysis_mode(client):
     response = client.post("/api/v1/api-analyses", json={
         "document": '{"data":[{"id":1,"name":"Test"}],"meta":{"current_page":1,"total":1}}',
@@ -101,3 +114,26 @@ def test_response_sample_is_the_default_api_analysis_mode(client):
     assert result["input_type"] == "response"
     assert result["report"]["analysis_type"] == "response"
     assert result["report"]["privacy_warnings"]
+
+
+def test_response_analysis_uses_known_contract_and_discards_raw_notes(client):
+    response = client.post("/api/v1/api-analyses", json={
+        "document": '{"data":[{"mail_status":"sent"}],"meta":{"current_page":1,"page_size":30}}',
+        "known_contract": "mail_status: pending | sent | failed\npage_size: default 30, maximum 100",
+        "purpose": "Admin application list", "method": "GET", "path": "/applications",
+        "mode": "replay", "locale": "zh-TW",
+    })
+    assert response.status_code == 202
+    analysis_id = response.json()["id"]
+    for _ in range(30):
+        result = client.get(f"/api/v1/api-analyses/{analysis_id}").json()
+        if result["status"] == "waiting_approval":
+            break
+        time.sleep(0.05)
+    else:
+        raise AssertionError("API analysis did not finish")
+
+    assert result["report"]["clarification_questions"] == []
+    assert "mail_status" in result["report"]["contract_notes_used"][0]
+    with SessionLocal() as db:
+        assert db.get(ApiAnalysis, analysis_id).known_contract == ""
