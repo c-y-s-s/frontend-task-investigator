@@ -21,6 +21,7 @@ GitHub Issue → Plan → Code search → File inspection → PR/CI context
 - **Human control:** approval and rejection are stored locally. Version 0.1 never writes to GitHub.
 - **Observable execution:** SSE streams workflow state, summaries, tool latency, token usage, and failure status.
 - **API Analyzer:** pasted OpenAPI 3.x JSON/YAML is converted into endpoint summaries, contract gaps, clarification questions, and a frontend integration checklist.
+- **Bug Investigator:** error, Console, and Network evidence is matched with read-only repository context to produce ranked hypotheses and verification actions—not an unverified fix.
 
 ## Architecture
 
@@ -216,6 +217,11 @@ When running without Docker, stop FastAPI and remove `apps/api/investigator.db`.
 | GET | `/api/v1/api-analyses/{id}/events` | Streams API analysis state with SSE |
 | POST | `/api/v1/api-analyses/{id}/approve` | Approves an API analysis report |
 | POST | `/api/v1/api-analyses/{id}/reject` | Rejects an API analysis report |
+| POST | `/api/v1/bug-investigations` | Starts Replay or Live bug investigation |
+| GET | `/api/v1/bug-investigations/{id}` | Returns bug investigation state and report |
+| GET | `/api/v1/bug-investigations/{id}/events` | Streams bug investigation state with SSE |
+| POST | `/api/v1/bug-investigations/{id}/approve` | Approves an investigation direction |
+| POST | `/api/v1/bug-investigations/{id}/reject` | Rejects an investigation direction |
 | GET | `/health` | Deployment health check |
 
 ## API Analyzer
@@ -231,6 +237,12 @@ The analyzer infers field types and nullability, detects pagination and personal
 Switch to OpenAPI Document mode to paste an OpenAPI 3.x JSON or YAML document. Replay performs deterministic checks without OpenAI; Live uses the same bounded and sanitized parser output as evidence for a structured AI report.
 
 The interview MVP intentionally accepts pasted input only. It rejects external `$ref` URLs, caps input at 500 KB, never fetches arbitrary URLs, redacts common personal-data values before Live AI analysis, and clears the source document from persistence after analysis. Generated TypeScript is a draft inferred from observed values, not a formal contract.
+
+## Bug Investigator
+
+Open `http://localhost:3000/bug-investigator`. Supply a bug title, expected behavior, Error message, Console log, and Network Response. Replay demonstrates a fixed payment 503 case; Live searches only the allowlisted GitHub repository, reads bounded candidate files, checks up to three related PRs, and asks OpenAI for at most three ranked hypotheses.
+
+The output intentionally says **possible cause**, not confirmed root cause. Each hypothesis includes evidence and small verification actions with expected signals. The workflow stops at human approval and never edits code, executes arbitrary commands, controls a browser, or creates a pull request. Common tokens and email values are redacted before Live AI, and raw Error/Console/Network input is cleared after the workflow.
 
 ## Safety and cost controls
 

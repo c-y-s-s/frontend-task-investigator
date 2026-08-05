@@ -10,8 +10,9 @@ from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .database import Base, engine, get_db
 from .api_analysis_workflow import run_api_analysis
-from .models import ApiAnalysis, AuditLog, Investigation, InvestigationStatus
-from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, InvestigationCreate, InvestigationRead, RejectionRequest
+from .bug_workflow import initial_steps, run_bug_investigation
+from .models import ApiAnalysis, AuditLog, BugInvestigation, Investigation, InvestigationStatus
+from .schemas import ApiAnalysisApproval, ApiAnalysisCreate, ApiAnalysisRead, ApprovalRequest, BugInvestigationApproval, BugInvestigationCreate, BugInvestigationRead, InvestigationCreate, InvestigationRead, RejectionRequest
 from .workflow import run_investigation, seed_steps
 
 
@@ -63,6 +64,71 @@ def query_api_analysis(db: Session, analysis_id: str) -> ApiAnalysis:
     item = db.get(ApiAnalysis, analysis_id)
     if not item:
         raise HTTPException(status_code=404, detail="API analysis not found")
+    return item
+
+
+def query_bug_investigation(db: Session, investigation_id: str) -> BugInvestigation:
+    item = db.get(BugInvestigation, investigation_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Bug investigation not found")
+    return item
+
+
+@app.post("/api/v1/bug-investigations", response_model=BugInvestigationRead, status_code=202)
+def create_bug_investigation(payload: BugInvestigationCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    if payload.mode == "live" and payload.repository.lower() not in settings.allowed_repos:
+        raise HTTPException(status_code=403, detail="Repository is not allowed in live mode")
+    item = BugInvestigation(**payload.model_dump(), steps=initial_steps(), tool_calls=[])
+    db.add(item); db.commit()
+    background_tasks.add_task(run_bug_investigation, item.id)
+    return query_bug_investigation(db, item.id)
+
+
+@app.get("/api/v1/bug-investigations/{investigation_id}", response_model=BugInvestigationRead)
+def get_bug_investigation(investigation_id: str, db: Session = Depends(get_db)):
+    return query_bug_investigation(db, investigation_id)
+
+
+@app.get("/api/v1/bug-investigations/{investigation_id}/events")
+async def bug_investigation_events(investigation_id: str):
+    async def stream():
+        previous = None
+        while True:
+            from .database import SessionLocal
+            with SessionLocal() as db:
+                try:
+                    payload = BugInvestigationRead.model_validate(query_bug_investigation(db, investigation_id)).model_dump(mode="json")
+                except HTTPException:
+                    yield 'event: error\ndata: {"detail":"Bug investigation not found"}\n\n'; return
+            encoded = json.dumps(payload)
+            if encoded != previous:
+                yield f"event: investigation\ndata: {encoded}\n\n"; previous = encoded
+            if payload["status"] in {"waiting_approval", "approved", "rejected", "failed"}:
+                yield "event: done\ndata: {}\n\n"; return
+            await asyncio.sleep(0.5)
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.post("/api/v1/bug-investigations/{investigation_id}/approve", response_model=BugInvestigationRead)
+def approve_bug_investigation(investigation_id: str, payload: BugInvestigationApproval, db: Session = Depends(get_db)):
+    item = query_bug_investigation(db, investigation_id)
+    if item.status != InvestigationStatus.waiting_approval:
+        raise HTTPException(status_code=409, detail="Only a waiting draft can be approved")
+    item.approved_report = payload.report.model_dump(mode="json") if payload.report else item.report
+    item.status = InvestigationStatus.approved
+    steps = [dict(step) for step in item.steps]
+    for step in steps:
+        if step["key"] == "approval": step.update(status="completed", summary="已由人工核准")
+    item.steps = steps; db.commit()
+    return item
+
+
+@app.post("/api/v1/bug-investigations/{investigation_id}/reject", response_model=BugInvestigationRead)
+def reject_bug_investigation(investigation_id: str, payload: RejectionRequest, db: Session = Depends(get_db)):
+    item = query_bug_investigation(db, investigation_id)
+    if item.status != InvestigationStatus.waiting_approval:
+        raise HTTPException(status_code=409, detail="Only a waiting draft can be rejected")
+    item.status = InvestigationStatus.rejected; db.commit()
     return item
 
 
