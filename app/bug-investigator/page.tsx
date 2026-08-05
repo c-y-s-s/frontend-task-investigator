@@ -17,6 +17,8 @@ type Investigation = { id: string; status: string; steps: Step[]; tool_calls: To
 type Locale = "zh-TW" | "en";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const REPLAY_REPOSITORY = "demo/frontend-agent-demo-shop";
+const LIVE_REPOSITORY = process.env.NEXT_PUBLIC_LIVE_DEMO_REPOSITORY || "c-y-s-s/frontend-agent-demo-shop";
 const terminal = new Set(["waiting_approval", "approved", "rejected", "failed"]);
 const samples = {
   "zh-TW": `readCart 遇到損壞的購物車 JSON 時會拋出 SyntaxError
@@ -45,7 +47,7 @@ const copy = {
 
 export default function BugInvestigatorPage() {
   const [locale, setLocale] = useState<Locale>("zh-TW");
-  const [repository, setRepository] = useState("demo/frontend-agent-demo-shop");
+  const [repository, setRepository] = useState(REPLAY_REPOSITORY);
   const [incident, setIncident] = useState(samples["zh-TW"]);
   const [expectedBehavior, setExpectedBehavior] = useState("");
   const [consoleLog, setConsoleLog] = useState("");
@@ -60,6 +62,11 @@ export default function BugInvestigatorPage() {
   const t = copy[locale];
 
   function changeLocale(next: Locale) { setLocale(next); if (incident === samples[locale]) setIncident(samples[next]); }
+  function changeMode(next: "replay" | "live") {
+    setMode(next);
+    if (next === "live" && repository === REPLAY_REPOSITORY) setRepository(LIVE_REPOSITORY);
+    if (next === "replay" && repository === LIVE_REPOSITORY) setRepository(REPLAY_REPOSITORY);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setLoading(true); setNotice(""); setItem(null); setShowReject(false); events.current?.close();
@@ -86,7 +93,7 @@ export default function BugInvestigatorPage() {
   return <main>
     <header className="topbar"><Link className="brand" href="/bug-investigator"><span className="brand-mark">!</span><span>Bug Investigator</span></Link><nav className="topbar-actions"><Link className="module-link" href="/">Task Investigator</Link><Link className="module-link" href="/api-analyzer">API Analyzer</Link><div className="locale-switcher"><button className={locale === "zh-TW" ? "active" : ""} onClick={() => changeLocale("zh-TW")}>中文</button><button className={locale === "en" ? "active" : ""} onClick={() => changeLocale("en")}>EN</button></div></nav></header>
     <section className="workspace bug-workspace"><div className="workspace-heading bug-heading"><div><span>BUG INVESTIGATOR · READ ONLY</span><h1>{t.title}</h1><p>{t.intro}</p></div></div>
-      <form className="bug-quick-form" onSubmit={submit}><div className="bug-quick-top"><label><span>Repository</span><input value={repository} onChange={e => setRepository(e.target.value)} /></label><div className="mode-picker"><button type="button" className={mode === "replay" ? "selected" : ""} onClick={() => setMode("replay")}>Replay</button><button type="button" className={mode === "live" ? "selected" : ""} onClick={() => setMode("live")}>Live AI</button></div></div><label className="bug-incident"><span>{t.input}</span><small>{t.inputHint}</small><textarea value={incident} onChange={e => setIncident(e.target.value)} required minLength={5} /></label><details className="bug-advanced"><summary>{t.advanced}</summary><div><label><span>{t.expected}</span><textarea value={expectedBehavior} onChange={e => setExpectedBehavior(e.target.value)} /></label><label><span>{t.console}</span><textarea value={consoleLog} onChange={e => setConsoleLog(e.target.value)} /></label><label><span>{t.network}</span><textarea value={networkContext} onChange={e => setNetworkContext(e.target.value)} /></label></div></details><div className="bug-quick-action"><p>{t.safety}</p><button className="run-button" disabled={loading}>{loading ? t.running : t.run}</button></div></form>{notice && <div className="notice">{notice}</div>}
+      <form className="bug-quick-form" onSubmit={submit}><div className="bug-quick-top"><label><span>Repository</span><input value={repository} onChange={e => setRepository(e.target.value)} /></label><div className="mode-picker"><button type="button" className={mode === "replay" ? "selected" : ""} onClick={() => changeMode("replay")}>Replay</button><button type="button" className={mode === "live" ? "selected" : ""} onClick={() => changeMode("live")}>Live AI</button></div></div><label className="bug-incident"><span>{t.input}</span><small>{t.inputHint}</small><textarea value={incident} onChange={e => setIncident(e.target.value)} required minLength={5} /></label><details className="bug-advanced"><summary>{t.advanced}</summary><div><label><span>{t.expected}</span><textarea value={expectedBehavior} onChange={e => setExpectedBehavior(e.target.value)} /></label><label><span>{t.console}</span><textarea value={consoleLog} onChange={e => setConsoleLog(e.target.value)} /></label><label><span>{t.network}</span><textarea value={networkContext} onChange={e => setNetworkContext(e.target.value)} /></label></div></details><div className="bug-quick-action"><p>{t.safety}</p><button className="run-button" disabled={loading}>{loading ? t.running : t.run}</button></div></form>{notice && <div className="notice">{notice}</div>}
     </section>
     {item && <section className="bug-simple-results"><div className="bug-result-status"><span>{item.status.replaceAll("_", " ")}</span><span>{item.steps.filter(step => step.status === "completed").length}/{item.steps.length} steps · {item.token_usage} tokens</span></div>{item.error && <div className="error-card"><strong>{t.stopped}</strong><p>{item.error}</p></div>}{!report && !item.error && <div className="analysis-loader"><span /><h3>{t.loading}</h3></div>}{item.rejection_reason && <div className="rejection-note"><strong>{t.reject}</strong><p>{item.rejection_reason}</p></div>}
       {report && topCause && nextAction && <><div className="bug-answer-grid"><article className="bug-primary-answer"><span>{t.cause}</span><h2>{topCause.title}</h2><p>{topCause.explanation}</p></article><article><span>{t.next}</span><h3>{nextAction.action}</h3><p><b>{t.signal}：</b>{nextAction.expected_signal}</p></article><article className="bug-confidence-card"><span>{t.confidence}</span><strong>{report.confidence.level}</strong><p>{report.confidence.reason}</p></article></div>
