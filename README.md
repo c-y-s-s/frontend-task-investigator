@@ -268,6 +268,8 @@ Use Replay mode for the reliable 3–5 minute walkthrough:
 4. Approve the report to demonstrate the human checkpoint and audit state.
 5. Show one saved Live result to compare real latency and token usage without risking an interview-time API failure.
 
+For the API Analyzer walkthrough, use the dedicated [Traditional Chinese demo script](docs/api-analyzer-demo.zh-TW.md). It demonstrates the same Response twice—first without known contract notes, then with confirmed rules—so the reviewer can see which questions disappear and why. The expected behavior is recorded in `evals/api-analyzer-response-case.json`.
+
 ## Evaluation
 
 Ground truth is stored outside the demo repository in `evals/`, so the Agent cannot discover the answers during code search. The interview-sized evaluation uses two deliberately different tasks:
