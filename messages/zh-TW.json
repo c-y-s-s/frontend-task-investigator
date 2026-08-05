@@ -3,15 +3,17 @@
     "metaTitle": "Task Investigator｜具備來源依據的工程規劃",
     "navigation": {"aria": "主要導覽", "workspace": "工作區", "architecture": "系統架構", "home": "Task Investigator 首頁"},
     "language": {"label": "語言", "zh": "中文", "en": "EN"},
+    "workspace": {"local": "本機環境", "kicker": "工作區", "title": "調查 GitHub 任務", "description": "輸入 Issue，取得程式碼影響範圍與實作建議。"},
     "hero": {
-      "eyebrow": "AGENT 驅動的工程工作流程",
-      "title": "把 GitHub Issue 轉換成",
-      "emphasis": "有來源依據的實作計畫。",
-      "description": "跨程式碼、Pull Request 與 CI 調查需求。檢視每項判斷的依據，再核准實作草稿。",
+      "eyebrow": "GitHub 任務調查 Agent",
+      "title": "從 Issue 到",
+      "emphasis": "可執行計畫",
+      "description": "Agent 搜尋程式碼與歷史紀錄，產生附帶來源的實作建議。",
+      "flowAria": "調查流程", "flowIssue": "Issue", "flowAgent": "Agent 調查", "flowPlan": "實作計畫",
       "readOnly": "唯讀工具", "approval": "人工核准", "citations": "來源引用"
     },
     "form": {
-      "title": "開始調查", "description": "使用 Replay 案例進行零成本、結果穩定的完整展示。",
+      "title": "開始調查", "description": "",
       "repository": "Repository", "issue": "Issue", "branch": "Branch", "modeAria": "分析模式",
       "replay": "Replay", "live": "Live", "run": "執行分析", "running": "調查中…",
       "repoAria": "GitHub Repository", "issueAria": "Issue 編號", "branchAria": "Branch"
@@ -22,7 +24,7 @@
     "notices": {"approved": "草稿已核准並記錄至稽核紀錄。", "rejected": "草稿已拒絕並記錄至稽核紀錄。"},
     "trace": {
       "title": "AGENT 執行軌跡", "steps": "{completed}/{total} 個步驟", "starting": "準備中…",
-      "mode": "模式", "tokens": "Tokens", "cost": "預估成本",
+      "mode": "模式", "tokens": "Tokens", "cost": "預估成本", "costUnavailable": "未設定",
       "stepLabels": {
         "read_issue": "讀取 GitHub Issue", "plan": "規劃調查步驟", "search_code": "搜尋 Repository",
         "read_files": "檢查候選檔案", "search_prs": "搜尋相關 Pull Request", "check_ci": "檢查 CI 狀態",
@@ -32,13 +34,18 @@
         "read_issue": "已載入 Issue #128", "plan": "已選擇付款、重試、結帳與冪等性搜尋詞",
         "search_code": "找到 12 個候選結果", "read_files": "已檢查 4 個相關檔案", "search_prs": "找到 2 個相關 PR",
         "check_ci": "最近一次 Workflow 已通過", "analyze": "已產生 3 項任務與 3 項風險", "approval": "核准前請先檢視草稿"
+      },
+      "liveStepSummaries": {
+        "read_issue": "已載入 Issue #{issue}", "plan": "搜尋詞：{terms}", "search_code": "找到 {count} 個候選結果",
+        "read_files": "已檢查 {count} 個相關檔案", "search_prs": "找到 {count} 個相關 PR", "check_ci": "找到 {count} 筆 Workflow 執行紀錄",
+        "analyze": "已產生 {tasks} 項任務與 {risks} 項風險", "approval": "核准前請先檢視草稿"
       }
     },
     "report": {
       "tab": "調查報告", "toolsTab": "工具呼叫", "stopped": "調查已停止",
-      "building": "正在建立證據關聯…", "preparing": "正在準備分析…", "gathering": "Agent 只會取得完成任務所需的資訊。",
+      "building": "正在分析…", "preparing": "準備中…", "gathering": "正在收集 GitHub 證據",
       "summary": "需求摘要", "confidence": "{level}信心", "questions": "待釐清問題", "files": "影響檔案",
-      "plan": "實作計畫", "risks": "風險清單",
+      "plan": "實作計畫", "risks": "風險清單", "evidenceTitle": "歷史證據", "evidenceKinds": {"pull_request": "Pull Request", "workflow": "CI Workflow"},
       "levels": {"high": "高", "medium": "中", "low": "低"},
       "evidence": {"direct": "直接證據", "inference": "推論"}
     },
@@ -51,6 +58,6 @@
       "groundedTitle": "有依據的輸出", "groundedBody": "檔案、任務與風險必須附上來源，否則明確標示為推論。",
       "controlTitle": "人工控制", "controlBody": "不修改外部系統；核准只會保存已審閱的草稿與稽核事件。"
     },
-    "footer": "作品集 MVP / 2026"
+    "footer": "Portfolio project"
   }
 }

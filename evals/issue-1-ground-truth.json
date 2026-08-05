@@ -1,0 +1,18 @@
+{
+  "repository": "c-y-s-s/frontend-agent-demo-shop",
+  "issue_number": 1,
+  "expected_impacted_files": [
+    "src/components/checkout/PaymentForm.tsx",
+    "src/components/checkout/PaymentForm.test.tsx",
+    "src/hooks/usePayment.ts",
+    "src/lib/paymentApi.ts",
+    "src/lib/paymentApi.test.ts"
+  ],
+  "expected_pull_request": 2,
+  "expected_workflow_conclusion": "success",
+  "required_risks": [
+    "stable server-side idempotency contract",
+    "bounded retry attempts",
+    "concurrent submission protection"
+  ]
+}

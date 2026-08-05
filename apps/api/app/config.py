@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     github_allowed_repos: str = "demo/frontend-agent-demo-shop"
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.6-terra"
-    max_files: int = 10
+    max_files: int = 7
     max_file_bytes: int = 40_000
     daily_live_limit: int = 20
     per_ip_hourly_limit: int = 3
@@ -26,4 +26,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

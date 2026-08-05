@@ -21,9 +21,12 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.6-terra}
+      # Keep local iteration practical. Production should override these with
+      # stricter Render environment values to control public API spend.
+      DAILY_LIVE_LIMIT: ${DAILY_LIVE_LIMIT:-100}
+      PER_IP_HOURLY_LIMIT: ${PER_IP_HOURLY_LIMIT:-20}
     ports: ["8000:8000"]
     depends_on:
       db: { condition: service_healthy }
 volumes:
   postgres_data:
-
